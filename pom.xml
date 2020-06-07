@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>it.gov.pagopa.bpd.ms</groupId>
+        <version>1.0-SNAPSHOT</version>
+        <artifactId>bpd-ms-starter-parent</artifactId>
+    </parent>
+
+    <artifactId>rtd-ms-payment-instrument-manager</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
+                <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager</groupId>
+                <artifactId>rtd-ms-payment-instrument-manager-core</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.api</groupId>
+                <artifactId>rtd-ms-payment-instrument-manager-api-rest</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons.api</groupId>
+                <artifactId>bpd-commons-api-rest</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons</groupId>
+                <artifactId>bpd-commons-base</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons</groupId>
+                <artifactId>bpd-commons-base</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
+                <artifactId>bpd-commons-integration-jpa</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
+                <artifactId>bpd-commons-integration-jpa</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
+                <artifactId>bpd-commons-integration-rest</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
+                <artifactId>bpd-commons-integration-rest</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <type>test-jar</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>it.gov.pagopa.bpd.commons</groupId>
+            <artifactId>bpd-commons-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.gov.pagopa.bpd.commons</groupId>
+            <artifactId>bpd-commons-base</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--        TODO: enable only if required-->
+        <!--        <dependency>-->
+        <!--            <groupId>it.gov.pagopa.bpd</groupId>-->
+        <!--            <artifactId>bpd-schema</artifactId>-->
+        <!--            <version>1.0-SNAPSHOT</version>-->
+        <!--        </dependency>-->
+    </dependencies>
+
+    <modules>
+        <module>app</module>
+        <module>core</module>
+        <module>integration</module>
+        <module>api</module>
+    </modules>
+</project>
