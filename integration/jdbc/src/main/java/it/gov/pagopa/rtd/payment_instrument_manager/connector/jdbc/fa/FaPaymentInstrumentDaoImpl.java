@@ -14,7 +14,7 @@ class FaPaymentInstrumentDaoImpl implements FaPaymentInstrumentDao {
     @Qualifier("faJdbcTemplate")
     private JdbcTemplate faJdbcTemplate;
 
-    public List<String> getActivePaymentInstruments() {
+    public List<String> getActiveHashPANs() {
         final List<String> hpans = faJdbcTemplate.queryForList("select hpan_s from fa_payment_instrument where enabled_b = true", String.class);
         return hpans;
     }

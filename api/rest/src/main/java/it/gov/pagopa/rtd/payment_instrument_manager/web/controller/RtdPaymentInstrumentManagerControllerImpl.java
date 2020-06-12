@@ -29,7 +29,7 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
     @Override
     public List<String> test() { //FIXME: remove me (created as archetype test)
 
-        final List<String> test = bpdPaymentInstrumentDao.getActivePaymentInstruments();
+        final List<String> test = bpdPaymentInstrumentDao.getActiveHashPANs();
 
         return test;
     }

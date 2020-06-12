@@ -5,6 +5,6 @@ import java.util.Set;
 
 public interface PaymentInstrumentManager {
 
-    Set<String> getActivePaymentInstruments();
+    Set<String> getActiveHashPANs();
 
 }

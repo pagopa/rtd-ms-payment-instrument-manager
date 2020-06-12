@@ -21,6 +21,11 @@
             <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
             <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-storage</artifactId>
+            <version>8.6.4</version>
+        </dependency>
     </dependencies>
 
 </project>

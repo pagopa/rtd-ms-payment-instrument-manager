@@ -14,7 +14,7 @@ class BpdPaymentInstrumentDaoImpl implements BpdPaymentInstrumentDao {
     @Qualifier("bpdJdbcTemplate")
     private JdbcTemplate bpdJdbcTemplate;
 
-    public List<String> getActivePaymentInstruments() {
+    public List<String> getActiveHashPANs() {
         final List<String> hpans = bpdJdbcTemplate.queryForList("select hpan_s from bpd_payment_instrument where enabled_b = true", String.class);
         return hpans;
     }

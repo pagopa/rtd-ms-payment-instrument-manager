@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface FaPaymentInstrumentDao {
 
-    List<String> getActivePaymentInstruments();
+    List<String> getActiveHashPANs();
 
 }
