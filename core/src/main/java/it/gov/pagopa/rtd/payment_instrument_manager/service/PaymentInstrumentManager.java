@@ -1,10 +1,13 @@
 package it.gov.pagopa.rtd.payment_instrument_manager.service;
 
 
-import java.util.Set;
+import com.microsoft.azure.storage.StorageException;
+
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
 
 public interface PaymentInstrumentManager {
 
-    Set<String> getActiveHashPANs();
+    String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException;
 
 }

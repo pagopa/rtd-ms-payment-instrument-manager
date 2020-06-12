@@ -82,10 +82,12 @@ class PaymentInstrumentManagerImpl implements PaymentInstrumentManager {
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeyException, StorageException, URISyntaxException {
 //        uploadBLOB();
-        downloadBLOB();
+        new PaymentInstrumentManagerImpl(null, null).getDownloadLink();
     }
 
-    public static void downloadBLOB() throws URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, StorageException {
+    public String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException {
+        final String result;
+
         final CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString); // URISyntaxException, InvalidKeyException
         final CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         final CloudBlobContainer blobContainer = blobClient.getContainerReference(containerReference);// StorageException
@@ -109,15 +111,22 @@ class PaymentInstrumentManagerImpl implements PaymentInstrumentManager {
                         new IPRange("127.0.0.1"),
                         SharedAccessProtocols.HTTPS_HTTP);
                 System.out.println("sas = " + sas);
-                System.out.println("blobUri = " + blob.getUri().toString() + "?" + sas);
+                System.out.println("blobUri = " + String.format("%s?%s", blob.getUri(), sas));
+
+                result = String.format("%s?%s", blob.getUri(), sas);
+
 
             } else {
                 System.out.println("blob " + blob.getName() + " not exists");
+                result = null;
             }
 
         } else {
             System.out.println("blobContainer " + blobContainer.getName() + " not exists");
+            result = null;
         }
+
+        return result;
     }
 
     @Scheduled(cron = "${batchConfiguration.paymentInstrumentsForAcquirer.cron}")
@@ -125,8 +134,7 @@ class PaymentInstrumentManagerImpl implements PaymentInstrumentManager {
         final Set<String> activeHashPANs = getActiveHashPANs();
     }
 
-    @Override
-    public Set<String> getActiveHashPANs() {
+    private Set<String> getActiveHashPANs() {
         final Set<String> result = new HashSet<>();
 
         final List<String> bpdActivePaymentInstruments = bpdPaymentInstrumentDao.getActiveHashPANs();
