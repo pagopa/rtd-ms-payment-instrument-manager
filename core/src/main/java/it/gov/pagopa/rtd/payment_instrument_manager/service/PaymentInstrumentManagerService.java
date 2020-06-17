@@ -6,7 +6,7 @@ import com.microsoft.azure.storage.StorageException;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 
-public interface PaymentInstrumentManager {
+public interface PaymentInstrumentManagerService {
 
     String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException;
 

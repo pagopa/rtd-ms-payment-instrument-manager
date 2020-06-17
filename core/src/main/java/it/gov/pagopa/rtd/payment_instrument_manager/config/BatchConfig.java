@@ -4,6 +4,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@PropertySource("classpath:config/batchAcquirer.properties")
+@PropertySource("classpath:config/pimService.properties")
 class BatchConfig {
 }

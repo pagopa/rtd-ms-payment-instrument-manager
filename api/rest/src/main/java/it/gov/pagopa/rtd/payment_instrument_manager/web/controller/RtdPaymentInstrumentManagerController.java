@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.util.List;
 
 /**
  * Controller to expose MicroService
@@ -17,7 +18,11 @@ import java.security.InvalidKeyException;
 @Api(tags = "Bonus Pagamenti Digitali payment-instrument-manager Controller")
 @RequestMapping("/rtd/payment-instrument-manager")
 public interface RtdPaymentInstrumentManagerController {
-    @GetMapping(value = "/hash-pans")
+    @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
-    void getHashPANs(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException;
+    void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException;
+
+    @GetMapping("/test")
+    @ResponseStatus(HttpStatus.OK)
+    List<String> test();
 }
