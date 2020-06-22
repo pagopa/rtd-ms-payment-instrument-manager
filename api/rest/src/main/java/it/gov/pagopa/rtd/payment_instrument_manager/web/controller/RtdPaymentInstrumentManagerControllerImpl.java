@@ -29,14 +29,27 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
 
     @Override
     public void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException {
+        if (log.isDebugEnabled()) {
+            log.debug("RtdPaymentInstrumentManagerControllerImpl.getHashedPans");
+        }
         final String downloadLink = paymentInstrumentManagerService.getDownloadLink();
+        if (log.isDebugEnabled()) {
+            log.debug("downloadLink = " + downloadLink);
+        }
+        System.out.println("downloadLink = " + downloadLink);
         httpServletResponse.setStatus(HttpServletResponse.SC_FOUND);
         httpServletResponse.setHeader("Location", downloadLink);
     }
 
 
     @Override
-    public List<String> test() {
+    public List<String> getActiveHashPANs() {
         return paymentInstrumentManagerDao.getActiveHashPANs();
+    }
+
+
+    @Override
+    public void uploadActiveHashPANs() {
+        paymentInstrumentManagerService.generateFileForAcquirer();
     }
 }

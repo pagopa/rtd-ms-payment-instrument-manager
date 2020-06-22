@@ -10,4 +10,6 @@ public interface PaymentInstrumentManagerService {
 
     String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException;
 
+    void generateFileForAcquirer();
+
 }

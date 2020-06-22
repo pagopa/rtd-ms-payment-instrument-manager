@@ -4,6 +4,7 @@ import com.microsoft.azure.storage.StorageException;
 import io.swagger.annotations.Api;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -22,7 +23,11 @@ public interface RtdPaymentInstrumentManagerController {
     @ResponseStatus(HttpStatus.FOUND)
     void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException;
 
-    @GetMapping("/test")
+    @GetMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)
-    List<String> test();
+    List<String> getActiveHashPANs();
+
+    @PostMapping("/active-hpans")
+    @ResponseStatus(HttpStatus.OK)
+    void uploadActiveHashPANs();
 }
