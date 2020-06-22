@@ -68,7 +68,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             throw new ResourceNotFoundException(CloudBlobContainer.class, containerReference);
         }
 
-        System.out.printf("blobContainer %s exists%n", blobContainer.getName());
+        if (log.isErrorEnabled()) {
+            log.error(String.format("blobContainer %s exists%n", blobContainer.getName()));
+        }
         final CloudBlockBlob blob = blobContainer.getBlockBlobReference(blobReference);
 
         if (!blob.exists()) {
@@ -129,6 +131,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             }
             blobContainer.createIfNotExists(BlobContainerPublicAccessType.OFF, new BlobRequestOptions(), new OperationContext());
 
+            //TODO: create a blob with current date
             final CloudBlockBlob blob = blobContainer.getBlockBlobReference(blobReference);
 
             if (log.isDebugEnabled()) {
@@ -142,19 +145,19 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 zip.write(hashPan.getBytes());
                 zip.write(System.lineSeparator().getBytes());
             }
-            zip.close();
 
             if (log.isDebugEnabled()) {
                 log.debug("Uploading compressed hashed pans");
             }
             final byte[] content = outputStream.toByteArray();
-            System.out.println("content.length = " + content.length);
-            blob.getMetadata().put("checksum", DigestUtils.sha256Hex(content));
+            blob.getMetadata().put("sha256", DigestUtils.sha256Hex(content));
             blob.uploadFromByteArray(content, 0, content.length);
 
         } catch (URISyntaxException | InvalidKeyException | IOException e) {
+            //TODO manage error
             e.printStackTrace();
         } catch (StorageException e) {
+            //TODO manage error
             System.out.println(String.format("Error returned from the service. Http code: %d and error code: %s", e.getHttpStatusCode(), e.getErrorCode()));
             e.printStackTrace();
         }

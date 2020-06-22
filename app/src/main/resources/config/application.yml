@@ -23,4 +23,4 @@ meda:
 
 logging:
   level:
-    it.gov.pagopa.bpd.payment_instrument_manager: ${LOG_LEVEL_RTD_PAYMENT_INSTRUMENT_MANAGER:DEBUG}
+    it.gov.pagopa.rtd.payment_instrument_manager: ${LOG_LEVEL_RTD_PAYMENT_INSTRUMENT_MANAGER:DEBUG}

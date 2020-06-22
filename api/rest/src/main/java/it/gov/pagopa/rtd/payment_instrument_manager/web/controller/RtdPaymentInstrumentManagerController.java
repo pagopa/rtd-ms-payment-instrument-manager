@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
-import java.util.List;
 
 /**
  * Controller to expose MicroService
@@ -22,10 +21,6 @@ public interface RtdPaymentInstrumentManagerController {
     @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
     void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException;
-
-    @GetMapping("/active-hpans")
-    @ResponseStatus(HttpStatus.OK)
-    List<String> getActiveHashPANs();
 
     @PostMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)
