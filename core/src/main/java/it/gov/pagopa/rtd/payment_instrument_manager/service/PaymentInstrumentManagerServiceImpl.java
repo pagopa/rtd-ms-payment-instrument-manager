@@ -29,9 +29,6 @@ import java.util.zip.ZipOutputStream;
 class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerService {
 
     private final String storageConnectionString;
-    //"DefaultEndpointsProtocol=https;" +
-    //"AccountName=<account-name>;" +
-    //"AccountKey=<account-key>";
     private final String containerReference;
     private final String blobReference;
     private final String exstractionFileName;
@@ -145,6 +142,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 zip.write(hashPan.getBytes());
                 zip.write(System.lineSeparator().getBytes());
             }
+            zip.close();
 
             if (log.isDebugEnabled()) {
                 log.debug("Uploading compressed hashed pans");
