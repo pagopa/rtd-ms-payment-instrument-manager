@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.time.OffsetDateTime;
@@ -34,6 +35,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private final String exstractionFileName;
     private final long expiryTime;
     private final String protocol;
+    private final Boolean useHttp;
     private final PaymentInstrumentManagerDao paymentInstrumentManagerDao;
 
 
@@ -43,7 +45,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                                                @Value("${blobStorageConfiguration.containerReference}") String containerReference,
                                                @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension,
                                                @Value("${blobStorageConfiguration.sharedAccess.expiryTime}") long expiryTime,
-                                               @Value("${blobStorageConfiguration.sharedAccess.protocol}") String protocol) {
+                                               @Value("${blobStorageConfiguration.sharedAccess.protocol}") String protocol,
+                                               @Value("${blobStorageConfiguration.sharedAccess.useHttp}") Boolean useHttp) {
         this.paymentInstrumentManagerDao = paymentInstrumentManagerDao;
         this.storageConnectionString = storageConnectionString;
         this.containerReference = containerReference;
@@ -51,9 +54,10 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
         this.expiryTime = expiryTime;
         this.protocol = protocol;
+        this.useHttp = useHttp;
     }
 
-    public String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException {
+    public String getDownloadLink() throws URISyntaxException, InvalidKeyException, StorageException, ResourceNotFoundException {
         final CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
         final CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         final CloudBlobContainer blobContainer = blobClient.getContainerReference(containerReference);
@@ -95,7 +99,11 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.debug(String.format("sas = %s", sas));
         }
 
-        return String.format("%s?%s", blob.getUri(), sas);
+        URI uri = blob.getUri();
+        return String.format("%s?%s",
+                protocol.contains("http") && useHttp ?
+                        uri.toString().replace("https", "http") :
+                        uri.toString(), sas);
     }
 
 
