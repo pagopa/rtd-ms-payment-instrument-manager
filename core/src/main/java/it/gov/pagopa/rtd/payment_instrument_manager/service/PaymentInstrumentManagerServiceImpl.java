@@ -69,8 +69,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             throw new ResourceNotFoundException(CloudBlobContainer.class, containerReference);
         }
 
-        if (log.isErrorEnabled()) {
-            log.error(String.format("blobContainer %s exists%n", blobContainer.getName()));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("blobContainer %s exists%n", blobContainer.getName()));
         }
         final CloudBlockBlob blob = blobContainer.getBlockBlobReference(blobReference);
 
@@ -164,7 +164,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             e.printStackTrace();
         } catch (StorageException e) {
             //TODO manage error
-            System.out.println(String.format("Error returned from the service. Http code: %d and error code: %s", e.getHttpStatusCode(), e.getErrorCode()));
+            System.out.println(String.format("Error returned from the storage service. Http code: %d and error code: %s", e.getHttpStatusCode(), e.getErrorCode()));
             e.printStackTrace();
         }
     }
