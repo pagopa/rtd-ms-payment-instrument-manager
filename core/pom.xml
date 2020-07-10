@@ -20,12 +20,10 @@
         <dependency>
             <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
             <artifactId>rtd-ms-payment-instrument-manager-integration-azure-storage</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
             <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
