@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>rtd-ms-payment-instrument-manager</artifactId>
-        <groupId>it.gov.pagopa.bpd.ms</groupId>
+        <groupId>it.gov.pagopa.rtd.ms</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
@@ -18,12 +18,6 @@
             <artifactId>rtd-ms-payment-instrument-manager-api-rest</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.api</groupId>-->
-        <!--            <artifactId>rtd-ms-payment-instrument-manager-app-api-listener</artifactId>-->
-        <!--            <version>${symbol_dollar}{bpd.payment-instrument-manager.version}</version>-->
-        <!--            <scope>runtime</scope>-->
-        <!--        </dependency>-->
     </dependencies>
 
     <build>

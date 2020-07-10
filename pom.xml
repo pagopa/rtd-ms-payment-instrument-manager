@@ -9,6 +9,7 @@
         <artifactId>bpd-ms-starter-parent</artifactId>
     </parent>
 
+    <groupId>it.gov.pagopa.rtd.ms</groupId>
     <artifactId>rtd-ms-payment-instrument-manager</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -18,6 +19,11 @@
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
+                <artifactId>rtd-ms-payment-instrument-manager-integration-azure-storage</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>

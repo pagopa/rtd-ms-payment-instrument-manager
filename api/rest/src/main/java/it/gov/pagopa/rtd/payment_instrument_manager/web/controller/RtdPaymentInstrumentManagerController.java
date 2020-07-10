@@ -1,6 +1,5 @@
 package it.gov.pagopa.rtd.payment_instrument_manager.web.controller;
 
-import com.microsoft.azure.storage.StorageException;
 import io.swagger.annotations.Api;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,8 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import javax.servlet.http.HttpServletResponse;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
 
 /**
  * Controller to expose MicroService
@@ -20,7 +17,7 @@ import java.security.InvalidKeyException;
 public interface RtdPaymentInstrumentManagerController {
     @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
-    void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException;
+    void getHashedPans(HttpServletResponse httpServletResponse);
 
     @PostMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)

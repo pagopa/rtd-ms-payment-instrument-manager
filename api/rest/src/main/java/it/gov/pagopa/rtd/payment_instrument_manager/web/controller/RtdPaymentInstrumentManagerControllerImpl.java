@@ -1,6 +1,5 @@
 package it.gov.pagopa.rtd.payment_instrument_manager.web.controller;
 
-import com.microsoft.azure.storage.StorageException;
 import eu.sia.meda.core.controller.StatelessController;
 import it.gov.pagopa.rtd.payment_instrument_manager.service.PaymentInstrumentManagerService;
 import lombok.extern.slf4j.Slf4j;
@@ -8,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
 
 @RestController
 @Slf4j
@@ -24,7 +21,7 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
 
 
     @Override
-    public void getHashedPans(HttpServletResponse httpServletResponse) throws InvalidKeyException, StorageException, URISyntaxException {
+    public void getHashedPans(HttpServletResponse httpServletResponse) {
         if (log.isDebugEnabled()) {
             log.debug("RtdPaymentInstrumentManagerControllerImpl.getHashedPans");
         }
@@ -37,6 +34,7 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
     }
 
 
+    //TODO:remove me
     @Override
     public void uploadActiveHashPANs() {
         paymentInstrumentManagerService.generateFileForAcquirer();
