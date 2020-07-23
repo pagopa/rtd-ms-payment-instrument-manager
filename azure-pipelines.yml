@@ -24,7 +24,7 @@ variables:
 
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '1b7900a3-6e8a-403a-b6ce-349854a5c6b8'
-  imageRepository: 'rtdmspaymentinstrumentmanager'
+  imageRepository: 'bpdmscitizen'
   containerRegistry: 'cstarregistry.azurecr.io'
   dockerfileRelativePath: 'Dockerfile'
   tag: '$(Build.BuildId)'
@@ -56,11 +56,11 @@ stages:
             inputs:
               mavenPomFile: 'pom.xml'
               goals: 'deploy'
-              options: '-B -s $(settingsxml.secureFilePath) -DskipTest'
-#              publishJUnitResults: true
-#              testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#              codeCoverageToolOption: 'JaCoCo'
-#              codeCoverageClassFilter: '+:it.gov.pagopa.**,-:**.*Config,-:**.model.**,-:**.enums.**,-:**.*Constants,-:**.*Application,-:**.*Test,-:**.*Test.**'
+              options: '-B -s $(settingsxml.secureFilePath)'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              codeCoverageToolOption: 'JaCoCo'
+              codeCoverageClassFilter: '+:it.gov.pagopa.**,-:**.*Config,-:**.model.**,-:**.enums.**,-:**.*Constants,-:**.*Application,-:**.*Test,-:**.*Test.**'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '1.8'
               mavenVersionOption: 'Default'
@@ -96,7 +96,7 @@ stages:
         displayName: Deploy
         pool:
           vmImage: $(vmImageName)
-        environment: 'pagopartdmspaymentinstrumentmanager.rtd-test'
+        environment: 'pagopabpdmscitizen.bpd-test'
         strategy:
           runOnce:
             deploy:
@@ -107,6 +107,12 @@ stages:
                     buildType: 'current'
                     artifactName: 'manifests'
                     targetPath: '$(Pipeline.Workspace)/manifests'
+                - task: KubernetesManifest@0
+                  displayName: Create imagePullSecret
+                  inputs:
+                    action: createSecret
+                    secretName: $(imagePullSecret)
+                    dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
                 - task: KubernetesManifest@0
                   displayName: Deploy to Kubernetes cluster
                   inputs:
