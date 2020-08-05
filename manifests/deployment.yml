@@ -17,6 +17,8 @@ spec:
           envFrom:
             - secretRef:
                 name: postgres-credentials
+            - secretRef:
+                name: azure-storage
             - configMapRef:
                 name: eventhub-logging
       hostAliases:
