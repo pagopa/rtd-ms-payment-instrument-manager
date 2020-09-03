@@ -1,0 +1,27 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: rtdmspaymentinstrumentmanager
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rtdmspaymentinstrumentmanager
+    spec:
+      containers:
+        - name: rtdmspaymentinstrumentmanager
+          image: cstarregistry.azurecr.io/rtdmspaymentinstrumentmanager-uat
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+            - secretRef:
+                name: azure-storage
+            - configMapRef:
+                name: eventhub-logging
+      hostAliases:
+        - hostnames:
+            - bpd-hub-dev.servicebus.windows.net
+          ip: 10.70.5.10
