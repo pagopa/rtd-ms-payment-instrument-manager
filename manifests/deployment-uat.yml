@@ -21,6 +21,8 @@ spec:
                 name: azure-storage
             - configMapRef:
                 name: eventhub-logging
+            - configMapRef:
+                name: rtdpaymentinstrumentmanager
       hostAliases:
         - hostnames:
             - bpd-hub-dev.servicebus.windows.net
