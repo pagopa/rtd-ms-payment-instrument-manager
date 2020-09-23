@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: rtdmspaymentinstrumentmanager
-          image: cstarregistry.azurecr.io/rtdmspaymentinstrumentmanager-sit
+          image: cstarregistry.azurecr.io/rtdmspaymentinstrumentmanager
           ports:
             - containerPort: 8080
           envFrom:
