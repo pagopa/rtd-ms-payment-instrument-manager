@@ -25,27 +25,29 @@ variables:
   dockerfileRelativePath: 'Dockerfile'
 
   # Agent VM image name for Build
+
   vmImageNameDefault: 'ubuntu-latest'
 
   # Image Repository Name
   imageRepository: 'rtdmspaymentinstrumentmanager'
 
+
   isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release')))]
   isSIT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/st')]
   isUAT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/uat')]
 
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/develop') }}:
-    dockerRegistryServiceConnection: '1b7900a3-6e8a-403a-b6ce-349854a5c6b8'
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/st') }}:
+  ${{ if eq(variables.isSIT, true) }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
     containerRegistry: 'cstarregistry.azurecr.io'
     deployment: deployment-sit
     imagePullSecret: 'cstarregistry-auth'
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/uat') }}:
+  ${{ if eq(variables.isUAT, true) }}:
     dockerRegistryServiceConnection: 'cstaruatregistry-connection'
     containerRegistry: 'cstaruatregistry.azurecr.io'
     deployment: deployment-uat
     imagePullSecret: 'cstaruatregistry-auth'
+  ${{ if and(ne(variables.isSIT, true), ne(variables.isUAT, true)) }}:
+    dockerRegistryServiceConnection: 'cstarregistry-connection'
 
 stages:
   - stage: Build
