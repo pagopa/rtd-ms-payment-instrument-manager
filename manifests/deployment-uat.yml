@@ -26,6 +26,8 @@ spec:
                 name: eventhub-logging
             - configMapRef:
                 name: rtdpaymentinstrumentmanager
+            - configMapRef:
+                name: jvm
       hostAliases:
         - hostnames:
             - bpd-event-uat.servicebus.windows.net
