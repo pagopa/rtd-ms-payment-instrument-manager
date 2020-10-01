@@ -23,6 +23,10 @@ spec:
                 name: eventhub-logging
             - configMapRef:
                 name: jvm
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -Xmx2g
       hostAliases:
         - hostnames:
             - bpd-hub-dev.servicebus.windows.net
