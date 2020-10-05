@@ -117,6 +117,10 @@ class AzureBlobClientImpl implements AzureBlobClient {
             blob.getMetadata().put("sha256", DigestUtils.sha256Hex(content));
             blob.uploadFromByteArray(content, 0, content.length);
 
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Uploaded %s", blobReference));
+            }
+
         } catch (StorageException | InvalidKeyException | URISyntaxException | IOException e) {
             throw new AzureBlobUploadException(e);
         }
