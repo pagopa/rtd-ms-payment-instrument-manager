@@ -35,6 +35,7 @@ variables:
   isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release')))]
   isSIT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/st')]
   isUAT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/uat')]
+  isPROD: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
   ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/st') }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
@@ -46,7 +47,12 @@ variables:
     containerRegistry: 'cstaruatregistry.azurecr.io'
     deployment: deployment-uat
     imagePullSecret: 'cstaruatregistry-auth'
-  ${{ if and(ne(variables['Build.SourceBranch'], 'refs/heads/release/st'), ne(variables['Build.SourceBranch'], 'refs/heads/release/uat')) }}:
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+    dockerRegistryServiceConnection: 'cstarprodregistry-connection'
+    containerRegistry: 'cstarprodregistry.azurecr.io'
+    deployment: deployment-prod
+    imagePullSecret: 'cstarprodregistry-auth'
+  ${{ if and(ne(variables['Build.SourceBranch'], 'refs/heads/release/st'), ne(variables['Build.SourceBranch'], 'refs/heads/release/uat'), ne(variables['Build.SourceBranch'], 'refs/heads/master')) }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
 
 stages:
@@ -133,33 +139,58 @@ stages:
                       $(imagePullSecret)
                     containers: |
                       $(containerRegistry)/$(imageRepository):$(Build.BuildId)
-                    
+
       - deployment: Deploy2
         displayName: Deploy UAT
         condition: eq(variables.isUAT, true)
         pool:
           name: uat_agent_pool
-          demands:
-          - agent.name -equals ddsrpst01 
-        environment: 'uat-test'
+        environment: 'uat'
         strategy:
           runOnce:
             deploy:
               steps:
-              - download: none
-              - task: DownloadPipelineArtifact@2
-                inputs:
-                  buildType: 'current'
-                  artifactName: 'manifests'
-                  targetPath: '$(Pipeline.Workspace)/manifests'
-              - task: KubernetesManifest@0
-                displayName: Deploy to Kubernetes cluster
-                inputs:
-                  action: 'deploy'
-                  kubernetesServiceConnection: 'ddsakstest-self-connection-rtd-uat'
-                  namespace: 'rtd-uat'
-                  manifests: |
-                    $(Pipeline.Workspace)/manifests/$(deployment).yml
-                    $(Pipeline.Workspace)/manifests/service.yml
-                  containers: '$(containerRegistry)/$(imageRepository):$(Build.BuildId)'
-                  imagePullSecrets: '$(imagePullSecret)'
+                - download: none
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'manifests'
+                    targetPath: '$(Pipeline.Workspace)/manifests'
+                - task: KubernetesManifest@0
+                  displayName: Deploy to Kubernetes cluster
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'ddsakstest-self-connection-rtd-uat'
+                    namespace: 'rtd-uat'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/$(deployment).yml
+                      $(Pipeline.Workspace)/manifests/service.yml
+                    containers: '$(containerRegistry)/$(imageRepository):$(Build.BuildId)'
+                    imagePullSecrets: '$(imagePullSecret)'
+      - deployment: Deploy3
+        displayName: Deploy PROD
+        condition: eq(variables.isPROD, true)
+        pool:
+          name: prod-agent-pool
+        environment: 'prod'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: none
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'manifests'
+                    targetPath: '$(Pipeline.Workspace)/manifests'
+                - task: KubernetesManifest@0
+                  displayName: Deploy to Kubernetes cluster
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'u87aksprod-rtd-self-connection'
+                    namespace: 'rtd'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/$(deployment).yml
+                      $(Pipeline.Workspace)/manifests/service.yml
+                    containers: '$(containerRegistry)/$(imageRepository):$(Build.BuildId)'
+                    imagePullSecrets: '$(imagePullSecret)'

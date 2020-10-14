@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtdmspaymentinstrumentmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rtdmspaymentinstrumentmanager
+  template:
+    metadata:
+      labels:
+        app: rtdmspaymentinstrumentmanager
+    spec:
+      containers:
+        - name: rtdmspaymentinstrumentmanager
+          image: cstarprodregistry.azurecr.io/rtdmspaymentinstrumentmanager
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+            - secretRef:
+                name: azure-storage
+            - configMapRef:
+                name: eventhub-logging
+            - configMapRef:
+                name: rtdpaymentinstrumentmanager
+            - configMapRef:
+                name: jvm
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -Xmx2g
+      hostAliases:
+        - hostnames:
+            - u87cstarprod.servicebus.windows.net
+          ip: 10.70.132.4
