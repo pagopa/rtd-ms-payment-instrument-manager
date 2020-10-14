@@ -28,10 +28,6 @@ spec:
                 name: rtdpaymentinstrumentmanager
             - configMapRef:
                 name: jvm
-          env:
-            - name: JAVA_TOOL_OPTIONS
-              value: >-
-                -Xmx2g
       hostAliases:
         - hostnames:
             - bpd-event-uat.servicebus.windows.net
