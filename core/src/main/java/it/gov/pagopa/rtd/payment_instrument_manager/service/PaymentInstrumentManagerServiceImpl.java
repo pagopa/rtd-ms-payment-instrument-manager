@@ -4,14 +4,18 @@ import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.Azur
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exception.AzureBlobDirectAccessException;
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exception.AzureBlobUploadException;
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.jdbc.PaymentInstrumentManagerDao;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -74,6 +78,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs());
     }
 
+    @SneakyThrows
     private void uploadHashedPans(Set<String> hashedPans) {
         if (log.isDebugEnabled()) {
             log.debug("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
@@ -83,9 +88,24 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         if (log.isDebugEnabled()) {
             log.debug("Compressing hashed pans");
         }
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+//        Path localFile = Files.createTempFile(exstractionFileName.split("\\.")[0],".csv");
+//
+//        BufferedWriter bufferedWriter = Files.newBufferedWriter(localFile,
+//                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+//
+//        for (String hashPan : hashedPans) {
+//            bufferedWriter.write(hashPan.concat(System.lineSeparator()));
+//        }
+//
+//        bufferedWriter.close();
+
+        File file = Files.createTempFile(blobReference.split("\\.")[0], ".zip").toFile();
+        FileOutputStream fileOutputStream = null;
+
         try {
-            final ZipOutputStream zip = new ZipOutputStream(outputStream);
+            fileOutputStream = new FileOutputStream(file);
+            final ZipOutputStream zip = new ZipOutputStream(fileOutputStream);
             ZipEntry zipEntry = new ZipEntry(exstractionFileName);
             zip.putNextEntry(zipEntry);
             for (String hashPan : hashedPans) {
@@ -98,14 +118,17 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 log.error("Failed to compress hashed pans list", e);
             }
             throw new RuntimeException(e);
+        } finally {
+            assert fileOutputStream != null;
+            fileOutputStream.close();
         }
 
         if (log.isDebugEnabled()) {
             log.debug("Uploading compressed hashed pans");
         }
         try {
-            azureBlobClient.upload(containerReference, blobReference, outputStream.toByteArray());
-
+            azureBlobClient.upload(containerReference, blobReference, file.getAbsolutePath());
+            FileUtils.forceDelete(file);
         } catch (AzureBlobUploadException e) {
             if (log.isErrorEnabled()) {
                 log.error("Failed to upload blob to azure storage", e);
