@@ -173,6 +173,14 @@ stages:
             deploy:
               steps:
                 - download: none
+                - task: Bash@3
+                  displayName: Print POM version
+                  condition: and(succeeded(), eq(variables.isToDeploy, true))
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      echo $POMVERSION
+                    failOnStderr: true                 
                 - task: DownloadPipelineArtifact@2
                   inputs:
                     buildType: 'current'
@@ -255,6 +263,14 @@ stages:
             deploy:
               steps:
                 - download: none
+                - task: Bash@3
+                  displayName: Print POM version
+                  condition: and(succeeded(), eq(variables.isToDeploy, true))
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      echo $POMVERSION
+                    failOnStderr: true                 
                 - task: DownloadPipelineArtifact@2
                   inputs:
                     buildType: 'current'
@@ -335,6 +351,14 @@ stages:
             deploy:
               steps:
                 - download: none
+                - task: Bash@3
+                  displayName: Print POM version
+                  condition: and(succeeded(), eq(variables.isToDeploy, true))
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      echo $POMVERSION
+                    failOnStderr: true                 
                 - task: DownloadPipelineArtifact@2
                   inputs:
                     buildType: 'current'
