@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>it.gov.pagopa.bpd.ms</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.3</version>
         <artifactId>bpd-ms-starter-parent</artifactId>
     </parent>
 
@@ -13,6 +13,9 @@
     <artifactId>rtd-ms-payment-instrument-manager</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <properties>
+        <bpd-commons.version>1.0.4</bpd-commons.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -39,39 +42,39 @@
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.api</groupId>
                 <artifactId>bpd-commons-api-rest</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons</groupId>
                 <artifactId>bpd-commons-base</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons</groupId>
                 <artifactId>bpd-commons-base</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
                 <artifactId>bpd-commons-integration-jpa</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
                 <artifactId>bpd-commons-integration-jpa</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
                 <artifactId>bpd-commons-integration-rest</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.integration</groupId>
                 <artifactId>bpd-commons-integration-rest</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${bpd-commons.version}</version>
                 <type>test-jar</type>
             </dependency>
         </dependencies>
@@ -107,4 +110,30 @@
         <module>integration</module>
         <module>api</module>
     </modules>
+
+    <distributionManagement>
+        <repository>
+            <id>cstar</id>
+            <url>https://pkgs.dev.azure.com/sia-dds/cstar/_packaging/cstar/maven/v1</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>cstar</id>
+            <url>https://pkgs.dev.azure.com/sia-dds/cstar/_packaging/cstar/maven/v1</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <scm>
+        <developerConnection>scm:git:https://github.com/pagopa/rtd-ms-payment-instrument-manager.git
+        </developerConnection>
+        <tag>1.0.0-rc3</tag>
+    </scm>
 </project>
