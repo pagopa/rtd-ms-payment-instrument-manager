@@ -167,7 +167,7 @@ stages:
         condition: and(succeeded(), eq(variables.isToDeploy, true), eq(variables.isSIT, true))
         pool:
           vmImage: $(vmImageNameDefault)
-        environment: 'sit.bpd-test'
+        environment: 'sit.rtd-test'
         strategy:
           runOnce:
             deploy:
@@ -264,8 +264,8 @@ stages:
                   displayName: Deploy to Kubernetes cluster
                   inputs:
                     action: 'deploy'
-                    kubernetesServiceConnection: 'ddsakstest-self-connection-bpd-uat'
-                    namespace: 'bpd-uat'
+                    kubernetesServiceConnection: 'ddsakstest-self-connection-rtd-uat'
+                    namespace: 'rtd-uat'
                     manifests: |
                       $(Pipeline.Workspace)/manifests/$(deployment).yml
                       $(Pipeline.Workspace)/manifests/service.yml
@@ -344,8 +344,8 @@ stages:
                   displayName: Deploy to Kubernetes cluster
                   inputs:
                     action: 'deploy'
-                    kubernetesServiceConnection: 'u87aksprod-bpd-self-connection'
-                    namespace: 'bpd'
+                    kubernetesServiceConnection: 'u87aksprod-rtd-self-connection'
+                    namespace: 'rtd'
                     manifests: |
                       $(Pipeline.Workspace)/manifests/$(deployment).yml
                       $(Pipeline.Workspace)/manifests/service.yml
