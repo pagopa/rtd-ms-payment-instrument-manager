@@ -4,12 +4,14 @@
     <parent>
         <artifactId>rtd-ms-payment-instrument-manager-integration</artifactId>
         <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
+
     </parent>
 
     <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
     <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
+
 
     <dependencies>
         <dependency>
