@@ -59,10 +59,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     @Scheduled(cron = "${batchConfiguration.paymentInstrumentsExtraction.cron}")
     public void generateFileForAcquirer() {
-        if (log.isDebugEnabled()) {
-            log.debug("PaymentInstrumentManagerServiceImpl.generateFileForAcquirer");
-        }
-
+        log.info("PaymentInstrumentManagerServiceImpl.generateFileForAcquirer");
         uploadHashedPans(getActiveHashPANs());
     }
 
@@ -104,7 +101,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.debug("Uploading compressed hashed pans");
         }
         try {
+
             azureBlobClient.upload(containerReference, blobReference, outputStream.toByteArray());
+            log.info("Uploaded hashed pan list");
 
         } catch (AzureBlobUploadException e) {
             if (log.isErrorEnabled()) {
