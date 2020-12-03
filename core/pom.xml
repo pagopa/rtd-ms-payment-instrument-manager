@@ -5,6 +5,7 @@
         <artifactId>rtd-ms-payment-instrument-manager</artifactId>
         <groupId>it.gov.pagopa.rtd.ms</groupId>
         <version>1.0.1</version>
+
     </parent>
 
     <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager</groupId>
