@@ -9,6 +9,7 @@ trigger:
       - develop
       - release/*
       - features/*
+      - hotfix/*
   paths:
     include:
       - api/*
@@ -32,9 +33,9 @@ variables:
   imageRepository: 'rtdmspaymentinstrumentmanager'
 
 
-  isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release')))]
+  isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')))]
   isSIT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/st')]
-  isUAT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/uat')]
+  isUAT: $[or(eq(variables['Build.SourceBranch'], 'refs/heads/release/uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix'))]
   isPROD: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
   ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/st') }}:
@@ -42,7 +43,7 @@ variables:
     containerRegistry: 'cstarregistry.azurecr.io'
     deployment: deployment-sit
     imagePullSecret: 'cstarregistry-auth'
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/uat') }}:
+  ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/release/uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')) }}:
     dockerRegistryServiceConnection: 'cstaruatregistry-connection'
     containerRegistry: 'cstaruatregistry.azurecr.io'
     deployment: deployment-uat
@@ -52,7 +53,7 @@ variables:
     containerRegistry: 'cstarprodregistry.azurecr.io'
     deployment: deployment-prod
     imagePullSecret: 'cstarprodregistry-auth'
-  ${{ if and(ne(variables['Build.SourceBranch'], 'refs/heads/release/st'), ne(variables['Build.SourceBranch'], 'refs/heads/release/uat'), ne(variables['Build.SourceBranch'], 'refs/heads/master')) }}:
+  ${{ if and(not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release')), ne(variables['Build.SourceBranch'], 'refs/heads/master'), not(startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix'))) }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
 
 stages:

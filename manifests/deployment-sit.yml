@@ -53,7 +53,7 @@ spec:
             timeoutSeconds: 5
             periodSeconds: 10
             successThreshold: 1
-            failureThreshold: 20
+            failureThreshold: 30
       hostAliases:
         - hostnames:
             - bpd-hub-dev.servicebus.windows.net
