@@ -16,8 +16,20 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<String> getActiveHashPANs() {
-        return jdbcTemplate.queryForList("select get_payment_instrument_hpans()", String.class);
+    public List<String> getActiveHashPANs(Long offset, Long size) {
+
+        String queryTemplate = "select * from payment_instrument_hpans order by hpan_s";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return jdbcTemplate.queryForList(queryTemplate, String.class);
+    }
+
+    @Override
+    public void refreshView() {
+        jdbcTemplate.execute("refresh materialized view payment_instrument_hpans");
     }
 
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 public interface PaymentInstrumentManagerDao {
 
-    List<String> getActiveHashPANs();
+    List<String> getActiveHashPANs(Long offset, Long size);
 
+    void refreshView();
 }
