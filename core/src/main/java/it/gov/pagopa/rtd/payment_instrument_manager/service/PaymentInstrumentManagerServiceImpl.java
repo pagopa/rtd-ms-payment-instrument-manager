@@ -124,15 +124,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                     .exec(String.format("cmd.exe /c sort %s | uniq > %s",
                             localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
         } else {
-            log.info("linux exec 1");
             process = Runtime.getRuntime()
-                    .exec(String.format("sh -c zip %s %s", zippedFile.toAbsolutePath(),
-                            mergedFile.toAbsolutePath()));
-        }
-
-
-        if (log.isInfoEnabled()) {
-            log.info("Compressing hashed pans");
+                    .exec("sh -c ls");
         }
 
         CommandRunner commandRunner =
@@ -140,30 +133,28 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         executorService.submit(commandRunner);
         int exitCode = process.waitFor();
         assert exitCode == 0;
-        log.info(""+exitCode);
+
+
+        if (log.isInfoEnabled()) {
+            log.info("Compressing hashed pans");
+        }
 
         if (isWindows) {
             process = Runtime.getRuntime()
                     .exec(String.format("cmd.exe /c powershell.exe \"Get-ChildItem -Path %s | " +
                                     "Compress-Archive -DestinationPath %s\"",
                             mergedFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
-            commandRunner =
-                    new CommandRunner(process.getInputStream(), System.out::println);
-            executorService.submit(commandRunner);
-            exitCode = process.waitFor();
-            assert exitCode == 0;
         } else {
-//            process = Runtime.getRuntime()
-//                    .exec(String.format("sh -c zip %s %s", zippedFile.toAbsolutePath(),
-//                            mergedFile.toAbsolutePath()));
+            process = Runtime.getRuntime()
+                    .exec(String.format("sh -c zip %s %s", zippedFile.toAbsolutePath(),
+                            mergedFile.toAbsolutePath()));
         }
 
-//        commandRunner =
-//                new CommandRunner(process.getInputStream(), System.out::println);
-//        executorService.submit(commandRunner);
-//        exitCode = process.waitFor();
-//        assert exitCode == 0;
-//        log.info(""+exitCode);
+        commandRunner =
+                new CommandRunner(process.getInputStream(), System.out::println);
+        executorService.submit(commandRunner);
+        exitCode = process.waitFor();
+        assert exitCode == 0;
 
         if (log.isInfoEnabled()) {
             log.info("Uploading compressed hashed pans");
