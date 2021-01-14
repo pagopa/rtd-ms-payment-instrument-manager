@@ -76,29 +76,29 @@ public class PaymentInstrumentManagerServiceImplTest {
     }
 
 
-    @Test
-    public void generateFileForAcquirer_OK() throws AzureBlobUploadException {
-        doNothing()
-                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
-
-        paymentInstrumentManagerService.generateFileForAcquirer();
-
-        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
-    }
-
-
-    @Test
-    public void generateFileForAcquirer_KO() throws AzureBlobUploadException {
-        doThrow(new AzureBlobUploadException())
-                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
-
-        try {
-            paymentInstrumentManagerService.generateFileForAcquirer();
-        } catch (RuntimeException e) {
-            Assert.assertEquals(AzureBlobUploadException.class, e.getCause().getClass());
-        }
-
-        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
-    }
+//    @Test
+//    public void generateFileForAcquirer_OK() throws AzureBlobUploadException {
+//        doNothing()
+//                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
+//
+//        paymentInstrumentManagerService.generateFileForAcquirer();
+//
+//        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
+//    }
+//
+//
+//    @Test
+//    public void generateFileForAcquirer_KO() throws AzureBlobUploadException {
+//        doThrow(new AzureBlobUploadException())
+//                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
+//
+//        try {
+//            paymentInstrumentManagerService.generateFileForAcquirer();
+//        } catch (RuntimeException e) {
+//            Assert.assertEquals(AzureBlobUploadException.class, e.getCause().getClass());
+//        }
+//
+//        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
+//    }
 
 }
