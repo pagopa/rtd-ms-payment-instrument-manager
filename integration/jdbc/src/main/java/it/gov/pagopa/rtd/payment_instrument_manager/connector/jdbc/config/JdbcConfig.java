@@ -49,9 +49,26 @@ class JdbcConfig {
     }
 
     @Bean("faJdbcTemplate")
-    @Primary
     public JdbcTemplate faJdbcTemplate() {
         return new JdbcTemplate(faDataSource());
+    }
+
+    @Bean(name="awardPeriodDataSourceProperties")
+    @ConfigurationProperties("award.spring.datasource")
+    public DataSourceProperties awardDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean(name="awardPeriodDataSource")
+    @ConfigurationProperties(prefix = "award.spring.datasource.hikari")
+    public DataSource awardDataSource() {
+        final DataSource dataSource = awardDataSourceProperties().initializeDataSourceBuilder().build();
+        return dataSource;
+    }
+
+    @Bean("awardPeriodJdbcTemplate")
+    public JdbcTemplate awardJdbcTemplate() {
+        return new JdbcTemplate(awardDataSource());
     }
 
 }
