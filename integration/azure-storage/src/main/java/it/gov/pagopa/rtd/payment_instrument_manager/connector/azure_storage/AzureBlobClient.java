@@ -7,6 +7,6 @@ public interface AzureBlobClient {
 
     String getDirectAccessLink(String containerReference, String blobReference) throws AzureBlobDirectAccessException;
 
-    void upload(String containerReference, String blobReference, byte[] content) throws AzureBlobUploadException;
+    void upload(String containerReference, String blobReference, String zipFile) throws AzureBlobUploadException;
 
 }
