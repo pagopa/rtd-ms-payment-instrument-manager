@@ -10,7 +10,7 @@
 
     <groupId>it.gov.pagopa.rtd.ms</groupId>
     <artifactId>rtd-ms-payment-instrument-manager</artifactId>
-    <version>1.1.0-rc2</version>
+    <version>1.1.0-rc3</version>
     <packaging>pom</packaging>
     <properties>
         <bpd-commons.version>1.0.9</bpd-commons.version>
@@ -21,22 +21,22 @@
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
-                <version>1.1.0-rc2</version>
+                <version>1.1.0-rc3</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-integration-azure-storage</artifactId>
-                <version>1.1.0-rc2</version>
+                <version>1.1.0-rc3</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-core</artifactId>
-                <version>1.1.0-rc2</version>
+                <version>1.1.0-rc3</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.api</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-api-rest</artifactId>
-                <version>1.1.0-rc2</version>
+                <version>1.1.0-rc3</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.api</groupId>
@@ -133,6 +133,6 @@
     <scm>
         <developerConnection>scm:git:https://github.com/pagopa/rtd-ms-payment-instrument-manager.git
         </developerConnection>
-        <tag>1.1.0-rc2</tag>
+        <tag>1.1.0-rc3</tag>
     </scm>
 </project>
