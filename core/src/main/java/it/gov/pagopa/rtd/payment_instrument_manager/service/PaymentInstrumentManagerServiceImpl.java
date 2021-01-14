@@ -90,10 +90,6 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.info("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
         }
 
-        if (log.isInfoEnabled()) {
-            log.info("Compressing hashed pans");
-        }
-
         Path zippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
         Path localFile = Files.createTempFile("tempFile".split("\\.")[0],".csv");
         Path mergedFile = Files.createTempFile(exstractionFileName.split("\\.")[0],".csv");
@@ -114,6 +110,10 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         bufferedWriter.close();
 
+        if (log.isInfoEnabled()) {
+            log.info("Merging hashed pans");
+        }
+
         ExecutorService executorService = Executors.newScheduledThreadPool(1);
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
@@ -127,6 +127,11 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             process = Runtime.getRuntime()
                     .exec(String.format("sh -c sort %s | uniq > %s", localFile.toAbsolutePath(),
                             mergedFile.toAbsolutePath()));
+        }
+
+
+        if (log.isInfoEnabled()) {
+            log.info("Compressing hashed pans");
         }
 
         CommandRunner commandRunner =
