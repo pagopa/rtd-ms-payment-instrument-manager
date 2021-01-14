@@ -110,10 +110,6 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         bufferedWriter.close();
 
-        if (log.isInfoEnabled()) {
-            log.info("Merging hashed pans");
-        }
-
         ExecutorService executorService = Executors.newScheduledThreadPool(1);
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
@@ -125,8 +121,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                             localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
         } else {
             process = Runtime.getRuntime()
-                    .exec(String.format("sort %s | uniq > %s",
-                            localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
+                    .exec(String.format("sh -c \"sort %s | uniq > %s\"", localFile.toAbsolutePath(),
+                            mergedFile.toAbsolutePath()));
         }
 
         CommandRunner commandRunner =
@@ -147,7 +143,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                             mergedFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
         } else {
             process = Runtime.getRuntime()
-                    .exec(String.format("zip %s %s", zippedFile.toAbsolutePath(),
+                    .exec(String.format("sh -c \"zip %s %s\"", zippedFile.toAbsolutePath(),
                             mergedFile.toAbsolutePath()));
         }
 
