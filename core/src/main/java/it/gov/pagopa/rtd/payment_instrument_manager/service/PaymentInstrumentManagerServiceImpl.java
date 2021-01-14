@@ -147,7 +147,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                             mergedFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
         } else {
             process = Runtime.getRuntime()
-                    .exec(String.format("sh -c zipf %s %s | echo 1", zippedFile.toAbsolutePath(),
+                    .exec(String.format("sh -c sort %s | uniq > %s", localFile.toAbsolutePath(),
                             mergedFile.toAbsolutePath()));
         }
 
