@@ -142,7 +142,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             process = Runtime.getRuntime()
                     .exec(String.format("cmd.exe /c powershell.exe \"Get-ChildItem -Path %s | " +
                                     "Compress-Archive -DestinationPath %s\"",
-                            mergedFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
+                            localFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
         } else {
             process = Runtime.getRuntime()
                     .exec(String.format("zip %s %s", zippedFile.toAbsolutePath(),
