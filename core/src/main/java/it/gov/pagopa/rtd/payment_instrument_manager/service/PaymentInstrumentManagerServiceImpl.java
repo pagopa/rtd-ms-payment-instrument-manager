@@ -115,21 +115,23 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 .toLowerCase().startsWith("windows");
 
         Process process;
-        if (isWindows) {
-            process = Runtime.getRuntime()
-                    .exec(String.format("cmd.exe /c sort %s | uniq > %s",
-                            localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
-        } else {
-            process = Runtime.getRuntime()
-                    .exec(String.format("sort -u -o %s %s",
-                            mergedFile.toAbsolutePath(), localFile.toAbsolutePath()));
-        }
-
-        CommandRunner commandRunner =
-                new CommandRunner(process.getInputStream(), System.out::println);
-        executorService.submit(commandRunner);
-        int exitCode = process.waitFor();
-        assert exitCode == 0;
+        CommandRunner commandRunner;
+        int exitCode;
+//        if (isWindows) {
+//            process = Runtime.getRuntime()
+//                    .exec(String.format("cmd.exe /c sort %s | uniq > %s",
+//                            localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
+//        } else {
+//            process = Runtime.getRuntime()
+//                    .exec(String.format("sort -u -o %s %s",
+//                            mergedFile.toAbsolutePath(), localFile.toAbsolutePath()));
+//        }
+//
+//        commandRunner =
+//                new CommandRunner(process.getInputStream(), System.out::println);
+//        executorService.submit(commandRunner);
+//        int exitCode = process.waitFor();
+//        assert exitCode == 0;
 
 
         if (log.isInfoEnabled()) {
