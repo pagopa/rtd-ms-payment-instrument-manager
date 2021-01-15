@@ -121,7 +121,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                             localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
         } else {
             process = Runtime.getRuntime()
-                    .exec(String.format("sort  --parallel=2 -uo %s %s",
+                    .exec(String.format("sort -u -o %s %s",
                             mergedFile.toAbsolutePath(), localFile.toAbsolutePath()));
         }
 
