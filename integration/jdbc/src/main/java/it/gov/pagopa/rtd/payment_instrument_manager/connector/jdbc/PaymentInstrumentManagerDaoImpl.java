@@ -15,6 +15,7 @@ import java.util.Set;
 class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
 
+    private final JdbcTemplate rtdJdbcTemplate;
     private final JdbcTemplate awardJdbcTemplate;
     private final JdbcTemplate bpdJdbcTemplate;
     private final JdbcTemplate faJdbcTemplate;
@@ -22,9 +23,11 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
     @Autowired
     public PaymentInstrumentManagerDaoImpl(
+            @Qualifier("rtdJdbcTemplate") JdbcTemplate rtdJdbcTemplate,
             @Qualifier("awardPeriodJdbcTemplate") JdbcTemplate awardJdbcTemplate,
             @Qualifier("bpdJdbcTemplate") JdbcTemplate bpdJdbcTemplate,
             @Qualifier("faJdbcTemplate") JdbcTemplate faJdbcTemplate) {
+        this.rtdJdbcTemplate = rtdJdbcTemplate;
         this.awardJdbcTemplate = awardJdbcTemplate;
         this.bpdJdbcTemplate = bpdJdbcTemplate;
         this.faJdbcTemplate = faJdbcTemplate;
@@ -42,17 +45,20 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         return awardJdbcTemplate.queryForMap(queryTemplate);
     }
 
-    public List<String> getBPDActiveHashPANs(String startDate, String endDate, Long offset, Long size) {
+    @Override
+    public List<Map<String,Object>> getBPDActiveHashPANs(
+            String executionDate, String startDate, String endDate, Long offset, Long size) {
 
         log.info("PaymentInstrumentManagerDaoImpl.getBPDActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "SELECT temp_pi.hpan_s FROM " +
-                "(SELECT DISTINCT bpi.hpan_s, bpi.insert_date_t " +
+        String queryTemplate = "SELECT temp_pi.hpan_s as hpan, temp_pi.insert_date as insert_date FROM " +
+                "(SELECT DISTINCT bpi.hpan_s, MAX(bpi.insert_date_t) as insert_date, MAX(bpi.activation_t) " +
                 "FROM bpd_payment_instrument.bpd_payment_instrument_history bpi " +
-                "WHERE activation_t <= '" + startDate +
+                "WHERE activation_t >= '" + executionDate + "' AND activation_t <= '" + startDate +
                 "' AND (deactivation_t IS NULL OR deactivation_t >= '" + endDate + "')" +
-                " ORDER BY bpi.insert_date_t";
+                " GROUP BY hpan_s) temp_pi" +
+                " ORDER BY temp_pi.insert_date";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" OFFSET " + offset + "LIMIT " +size);
@@ -60,26 +66,42 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         queryTemplate = queryTemplate.concat(") temp_pi");
 
-        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+        return bpdJdbcTemplate.queryForList(queryTemplate);
 
     }
 
-    public List<String> getFAActiveHashPANs(Long offset, Long size) {
+    @Override
+    public List<Map<String,Object>> getFAActiveHashPANs(String executionDate, Long offset, Long size) {
 
         log.info("PaymentInstrumentManagerDaoImpl.getFAActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "select hpan_s from fa_payment_instrument where enabled_b=true " +
+        String queryTemplate = "select hpan_s as hpan, insert_date_t as insert_date" +
+                " from fa_payment_instrument where enabled_b=true " +
                 "order by insert_date_t";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
         }
 
-        return faJdbcTemplate.queryForList(queryTemplate, String.class);
+        return faJdbcTemplate.queryForList(queryTemplate);
 
     }
 
+    @Override
+    public String getRtdExecutionDate() {
 
+        log.info("PaymentInstrumentManagerDaoImpl.getExecutionData");
+
+        String queryTemplate = "select execution_date_t from batch_exec_data limit 1";
+
+        return rtdJdbcTemplate.queryForObject(queryTemplate, String.class);
+
+    }
+
+    @Override
+    public void insertPaymentInstruments(List<Map<String, Object>> paymentInstruments) {
+
+    }
 
 }

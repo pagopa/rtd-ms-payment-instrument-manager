@@ -14,6 +14,26 @@ import javax.sql.DataSource;
 @PropertySource("classpath:config/jdbcConfig.properties")
 class JdbcConfig {
 
+    @Bean(name="rtdDataSourceProperties")
+    @Primary
+    @ConfigurationProperties("rtd.spring.datasource")
+    public DataSourceProperties rtdDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean(name="rtdDataSource")
+    @Primary
+    @ConfigurationProperties(prefix = "rtd.spring.datasource.hikari")
+    public DataSource rtdDataSource() {
+        return rtdDataSourceProperties().initializeDataSourceBuilder().build();
+    }
+
+    @Bean("rtdJdbcTemplate")
+    @Primary
+    public JdbcTemplate rtdJdbcTemplate() {
+        return new JdbcTemplate(rtdDataSource());
+    }
+
     @Bean(name="bpdDataSourceProperties")
     @Primary
     @ConfigurationProperties("bpd.spring.datasource")
@@ -25,8 +45,7 @@ class JdbcConfig {
     @Primary
     @ConfigurationProperties(prefix = "bpd.spring.datasource.hikari")
     public DataSource bpdDataSource() {
-        final DataSource dataSource = bpdDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
+        return bpdDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
     @Bean("bpdJdbcTemplate")
@@ -44,8 +63,7 @@ class JdbcConfig {
     @Bean(name="faDataSource")
     @ConfigurationProperties(prefix = "fa.spring.datasource.hikari")
     public DataSource faDataSource() {
-        final DataSource dataSource = faDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
+        return faDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
     @Bean("faJdbcTemplate")
@@ -62,8 +80,7 @@ class JdbcConfig {
     @Bean(name="awardPeriodDataSource")
     @ConfigurationProperties(prefix = "award.spring.datasource.hikari")
     public DataSource awardDataSource() {
-        final DataSource dataSource = awardDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
+        return awardDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
     @Bean("awardPeriodJdbcTemplate")

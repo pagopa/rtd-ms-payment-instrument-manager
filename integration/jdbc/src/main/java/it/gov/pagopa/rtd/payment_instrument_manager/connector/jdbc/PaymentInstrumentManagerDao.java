@@ -7,8 +7,12 @@ public interface PaymentInstrumentManagerDao {
 
     Map<String,Object> getAwardPeriods();
 
-    List<String> getBPDActiveHashPANs(String startDate, String endDate, Long offset, Long size);
+    List<Map<String,Object>> getBPDActiveHashPANs(
+            String startDate, String endDate, String executionDate, Long offset, Long size);
 
-    List<String> getFAActiveHashPANs(Long offset, Long size);
+    List<Map<String,Object>> getFAActiveHashPANs(String executionDate, Long offset, Long size);
 
+    String getRtdExecutionDate();
+
+    void insertPaymentInstruments(List<Map<String, Object>> paymentInstruments);
 }

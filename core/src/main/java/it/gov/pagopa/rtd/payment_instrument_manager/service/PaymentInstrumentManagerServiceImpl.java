@@ -7,15 +7,13 @@ import it.gov.pagopa.rtd.payment_instrument_manager.connector.jdbc.PaymentInstru
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -24,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 @Service
@@ -90,67 +90,55 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.info("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
         }
 
-        if (log.isInfoEnabled()) {
-            log.info("Compressing hashed pans");
-        }
-
         Path zippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
         Path localFile = Files.createTempFile("tempFile".split("\\.")[0],".csv");
-        Path mergedFile = Files.createTempFile(exstractionFileName.split("\\.")[0],".csv");
 
         FileUtils.forceDelete(localFile.toFile());
-        FileUtils.forceDelete(mergedFile.toFile());
         FileUtils.forceDelete(zippedFile.toFile());
 
         Map<String,Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
         String startDate = String.valueOf(awardPeriodData.get("start_date"));
         String endDate = String.valueOf(awardPeriodData.get("end_date"));
 
+        String executionDate = paymentInstrumentManagerDao.getRtdExecutionDate();
+
+        writeBpdHpansToRtd(executionDate, startDate, endDate);
+        writeFaHpansToRtd(executionDate);
+
+
         BufferedWriter bufferedWriter = Files.newBufferedWriter(localFile,
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 
-        writeBpdHpans(startDate,endDate,bufferedWriter);
-        writeFAHpans(bufferedWriter);
+        //writeBpdHpans(startDate,endDate,bufferedWriter);
+        //writeFAHpans(bufferedWriter);
 
         bufferedWriter.close();
 
-        ExecutorService executorService = Executors.newScheduledThreadPool(1);
-        boolean isWindows = System.getProperty("os.name")
-                .toLowerCase().startsWith("windows");
 
-        Process process;
-        if (isWindows) {
-            process = Runtime.getRuntime()
-                    .exec(String.format("cmd.exe /c sort %s | uniq > %s",
-                            localFile.toAbsolutePath(), mergedFile.toAbsolutePath()));
-        } else {
-            process = Runtime.getRuntime()
-                    .exec(String.format("sh -c sort %s | uniq > %s", localFile.toAbsolutePath(),
-                            mergedFile.toAbsolutePath()));
+        if (log.isInfoEnabled()) {
+            log.info("Compressing hashed pans");
         }
 
-        CommandRunner commandRunner =
-                new CommandRunner(process.getInputStream(), System.out::println);
-        executorService.submit(commandRunner);
-        int exitCode = process.waitFor();
-        assert exitCode == 0;
-
-        if (isWindows) {
-            process = Runtime.getRuntime()
-                    .exec(String.format("cmd.exe /c powershell.exe \"Get-ChildItem -Path %s | " +
-                                    "Compress-Archive -DestinationPath %s\"",
-                            mergedFile.toAbsolutePath(), zippedFile.toAbsolutePath()));
-        } else {
-            process = Runtime.getRuntime()
-                    .exec(String.format("sh -c zip %s %s", zippedFile.toAbsolutePath(),
-                            mergedFile.toAbsolutePath()));
+        FileOutputStream fileOutputStream = null;
+        try {
+            FileInputStream fileInputStream = new FileInputStream(localFile.toFile());
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+            fileOutputStream = new FileOutputStream(zippedFile.toFile());
+            BufferedOutputStream bos = new BufferedOutputStream(fileOutputStream);
+            final ZipOutputStream zip = new ZipOutputStream(bos);
+            ZipEntry zipEntry = new ZipEntry(exstractionFileName);
+            zip.putNextEntry(zipEntry);
+            IOUtils.copy(bufferedInputStream, zip);
+            zip.close();
+        } catch (IOException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to compress hashed pans list", e);
+            }
+            throw new RuntimeException(e);
+        } finally {
+            assert fileOutputStream != null;
+            fileOutputStream.close();
         }
-
-        commandRunner =
-                new CommandRunner(process.getInputStream(), System.out::println);
-        executorService.submit(commandRunner);
-        exitCode = process.waitFor();
-        assert exitCode == 0;
 
         if (log.isInfoEnabled()) {
             log.info("Uploading compressed hashed pans");
@@ -160,7 +148,6 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             azureBlobClient.upload(containerReference, blobReference, zippedFile.toFile().getAbsolutePath());
             FileUtils.forceDelete(localFile.toFile());
-            FileUtils.forceDelete(mergedFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
             if (log.isInfoEnabled()) {
                 log.info("Uploaded hashed pan list");
@@ -175,25 +162,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     }
 
-    private static class CommandRunner implements Runnable {
-        private InputStream inputStream;
-        private Consumer<String> consumer;
-
-        public CommandRunner(InputStream inputStream, Consumer<String> consumer) {
-            this.inputStream = inputStream;
-            this.consumer = consumer;
-        }
-
-        @Override
-        public void run() {
-            new BufferedReader(new InputStreamReader(inputStream)).lines()
-                    .forEach(consumer);
-        }
-
-    }
-
     @SneakyThrows
-    private void writeBpdHpans(String startDate, String endDate, BufferedWriter bufferedWriter) {
+    private void writeBpdHpansToRtd(String executionDate, String startDate, String endDate) {
 
         try {
 
@@ -202,13 +172,12 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executed) {
 
-                List<String> hashedPans = paymentInstrumentManagerDao
-                        .getBPDActiveHashPANs(startDate, endDate, offset, pageSize);
-                for (String hashPan : hashedPans) {
-                    bufferedWriter.write(hashPan.concat(System.lineSeparator()));
-                }
+                List<Map<String,Object>> paymentInstruments = paymentInstrumentManagerDao
+                        .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, pageSize);
 
-                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                paymentInstrumentManagerDao.insertPaymentInstruments(paymentInstruments);
+
+                if (paymentInstruments.isEmpty() || paymentInstruments.size() < pageSize) {
                     executed = true;
                 } else {
                     offset += pageSize;
@@ -224,7 +193,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     }
 
     @SneakyThrows
-    private void writeFAHpans(BufferedWriter bufferedWriter) {
+    private void writeFaHpansToRtd(String executionDate) {
 
         try {
 
@@ -233,10 +202,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executed) {
 
-                List<String> hashedPans = paymentInstrumentManagerDao.getFAActiveHashPANs(offset, pageSize);
-                for (String hashPan : hashedPans) {
-                    bufferedWriter.write(hashPan.concat(System.lineSeparator()));
-                }
+                List<Map<String,Object>> hashedPans = paymentInstrumentManagerDao
+                        .getFAActiveHashPANs(executionDate, offset, pageSize);
 
                 if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
                     executed = true;
