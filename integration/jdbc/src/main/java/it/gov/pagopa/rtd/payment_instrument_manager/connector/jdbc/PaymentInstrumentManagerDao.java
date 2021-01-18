@@ -5,10 +5,8 @@ import java.util.Map;
 
 public interface PaymentInstrumentManagerDao {
 
-    Map<String,Object> getAwardPeriods();
+    List<String> getActiveHashPANs(Long offset, Long size);
 
-    List<String> getBPDActiveHashPANs(String startDate, String endDate, Long offset, Long size);
-
-    List<String> getFAActiveHashPANs(Long offset, Long size);
+    void refreshView();
 
 }

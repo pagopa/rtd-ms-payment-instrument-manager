@@ -14,61 +14,24 @@ import javax.sql.DataSource;
 @PropertySource("classpath:config/jdbcConfig.properties")
 class JdbcConfig {
 
-    @Bean(name="bpdDataSourceProperties")
+    @Bean(name="rtdDataSourceProperties")
     @Primary
-    @ConfigurationProperties("bpd.spring.datasource")
-    public DataSourceProperties bpdDataSourceProperties() {
+    @ConfigurationProperties("rtd.spring.datasource")
+    public DataSourceProperties rtdDataSourceProperties() {
         return new DataSourceProperties();
     }
 
-    @Bean(name="bpdDataSource")
+    @Bean(name="rtdDataSource")
     @Primary
-    @ConfigurationProperties(prefix = "bpd.spring.datasource.hikari")
-    public DataSource bpdDataSource() {
-        final DataSource dataSource = bpdDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
+    @ConfigurationProperties(prefix = "rtd.spring.datasource.hikari")
+    public DataSource rtdDataSource() {
+        return rtdDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
-    @Bean("bpdJdbcTemplate")
+    @Bean("rtdJdbcTemplate")
     @Primary
-    public JdbcTemplate bpdJdbcTemplate() {
-        return new JdbcTemplate(bpdDataSource());
-    }
-
-    @Bean(name="faDataSourceProperties")
-    @ConfigurationProperties("fa.spring.datasource")
-    public DataSourceProperties faDataSourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @Bean(name="faDataSource")
-    @ConfigurationProperties(prefix = "fa.spring.datasource.hikari")
-    public DataSource faDataSource() {
-        final DataSource dataSource = faDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
-    }
-
-    @Bean("faJdbcTemplate")
-    public JdbcTemplate faJdbcTemplate() {
-        return new JdbcTemplate(faDataSource());
-    }
-
-    @Bean(name="awardPeriodDataSourceProperties")
-    @ConfigurationProperties("award.spring.datasource")
-    public DataSourceProperties awardDataSourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @Bean(name="awardPeriodDataSource")
-    @ConfigurationProperties(prefix = "award.spring.datasource.hikari")
-    public DataSource awardDataSource() {
-        final DataSource dataSource = awardDataSourceProperties().initializeDataSourceBuilder().build();
-        return dataSource;
-    }
-
-    @Bean("awardPeriodJdbcTemplate")
-    public JdbcTemplate awardJdbcTemplate() {
-        return new JdbcTemplate(awardDataSource());
+    public JdbcTemplate rtdJdbcTemplate() {
+        return new JdbcTemplate(rtdDataSource());
     }
 
 }
