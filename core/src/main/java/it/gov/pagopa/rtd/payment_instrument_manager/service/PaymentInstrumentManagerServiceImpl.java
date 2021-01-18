@@ -131,6 +131,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 offset += pageSize;
             }
 
+            bufferedWriter.flush();
+
         }
 
         bufferedWriter.close();
