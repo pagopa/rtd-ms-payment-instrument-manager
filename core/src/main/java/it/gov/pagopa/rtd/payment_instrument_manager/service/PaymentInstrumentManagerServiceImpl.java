@@ -92,7 +92,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private Set<String> getActiveHashPANs(Long offset, Long size) {
 
         if (log.isInfoEnabled()) {
-            log.info("PaymentInstrumentManagerServiceImpl.getActiveHashPANs");
+            log.info("PaymentInstrumentManagerServiceImpl.getActiveHashPANs" +
+                    " offset: " + offset + "size: " + size);
         }
 
         return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs(offset, size));
@@ -129,6 +130,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             } else {
                 offset += pageSize;
             }
+
+            bufferedWriter.flush();
 
         }
 
