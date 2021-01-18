@@ -61,6 +61,7 @@ spec:
             successThreshold: 1
             failureThreshold: 20
 
+
       hostAliases:
         - hostnames:
             - bpd-event-uat.servicebus.windows.net

@@ -55,6 +55,7 @@ spec:
             successThreshold: 1
             failureThreshold: 20
 
+
       hostAliases:
         - hostnames:
             - bpd-hub-dev.servicebus.windows.net
