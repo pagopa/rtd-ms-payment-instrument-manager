@@ -22,4 +22,8 @@ public interface RtdPaymentInstrumentManagerController {
     @PostMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)
     void uploadActiveHashPANs();
+
+    @PostMapping("/refresh-active-hpans")
+    @ResponseStatus(HttpStatus.OK)
+    void refreshActiveHpans();
 }
