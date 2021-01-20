@@ -39,4 +39,9 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
     public void uploadActiveHashPANs() {
         paymentInstrumentManagerService.generateFileForAcquirer();
     }
+
+    @Override
+    public void refreshActiveHpans() {
+        paymentInstrumentManagerService.refreshActiveHpans();
+    }
 }

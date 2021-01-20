@@ -7,4 +7,6 @@ public interface PaymentInstrumentManagerService {
 
     void generateFileForAcquirer();
 
+    void refreshActiveHpans();
+
 }

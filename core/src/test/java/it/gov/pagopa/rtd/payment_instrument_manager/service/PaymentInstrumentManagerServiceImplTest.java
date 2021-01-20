@@ -43,8 +43,14 @@ public class PaymentInstrumentManagerServiceImplTest {
 
     @PostConstruct
     public void configureTests() throws AzureBlobDirectAccessException {
-        when(paymentInstrumentManagerDaoMock.getActiveHashPANs(null, null))
-                .thenReturn(Collections.emptyList());
+        when(paymentInstrumentManagerDaoMock.getBPDActiveHashPANs(
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Collections.singletonList("test"));
+
+        when(paymentInstrumentManagerDaoMock.getActiveHashPANs(
+                Mockito.any(), Mockito.any()))
+                .thenReturn(Collections.singletonList("test"));
+
     }
 
 
