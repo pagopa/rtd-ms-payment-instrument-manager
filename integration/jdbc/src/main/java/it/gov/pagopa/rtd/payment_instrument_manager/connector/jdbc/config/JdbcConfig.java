@@ -35,21 +35,18 @@ class JdbcConfig {
     }
 
     @Bean(name="bpdDataSourceProperties")
-    @Primary
     @ConfigurationProperties("bpd.spring.datasource")
     public DataSourceProperties bpdDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean(name="bpdDataSource")
-    @Primary
     @ConfigurationProperties(prefix = "bpd.spring.datasource.hikari")
     public DataSource bpdDataSource() {
         return bpdDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
     @Bean("bpdJdbcTemplate")
-    @Primary
     public JdbcTemplate bpdJdbcTemplate() {
         return new JdbcTemplate(bpdDataSource());
     }

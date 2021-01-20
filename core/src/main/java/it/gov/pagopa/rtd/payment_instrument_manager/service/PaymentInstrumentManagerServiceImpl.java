@@ -17,8 +17,11 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -83,6 +86,37 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     }
 
+    public void refreshActiveHpans() {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.refreshActiveHpans");
+        }
+
+        Map<String,Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
+        String startDate = String.valueOf(awardPeriodData.get("start_date"));
+        String endDate = String.valueOf(awardPeriodData.get("end_date"));
+
+        String saveExecutionDate = OffsetDateTime.now().toString();
+
+        String startExecutionDate = paymentInstrumentManagerDao.getRtdExecutionDate();
+
+        writeBpdHpansToRtd(startExecutionDate, startDate, endDate);
+        writeFaHpansToRtd(startExecutionDate);
+
+        paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDate);
+
+    }
+
+    private Set<String> getActiveHashPANs(Long offset, Long size) {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getActiveHashPANs" +
+                    " offset: " + offset + ", size: " + size);
+        }
+
+        return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs(offset, size));
+    }
+
     @SneakyThrows
     private void uploadHashedPans() {
 
@@ -96,36 +130,47 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         FileUtils.forceDelete(localFile.toFile());
         FileUtils.forceDelete(zippedFile.toFile());
 
-        Map<String,Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
-        String startDate = String.valueOf(awardPeriodData.get("start_date"));
-        String endDate = String.valueOf(awardPeriodData.get("end_date"));
-
-        String executionDate = paymentInstrumentManagerDao.getRtdExecutionDate();
-
-        writeBpdHpansToRtd(executionDate, startDate, endDate);
-        writeFaHpansToRtd(executionDate);
-
+        refreshActiveHpans();
 
         BufferedWriter bufferedWriter = Files.newBufferedWriter(localFile,
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 
-        //writeBpdHpans(startDate,endDate,bufferedWriter);
-        //writeFAHpans(bufferedWriter);
+        boolean executed = false;
+        long offset = 0L;
+
+        while (!executed) {
+
+            Set<String> hashedPans = getActiveHashPANs(offset, pageSize);
+            for (String hashPan : hashedPans) {
+                bufferedWriter.write(hashPan.concat(System.lineSeparator()));
+            }
+
+            if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                executed = true;
+            } else {
+                offset += pageSize;
+            }
+
+            bufferedWriter.flush();
+
+        }
 
         bufferedWriter.close();
-
 
         if (log.isInfoEnabled()) {
             log.info("Compressing hashed pans");
         }
 
+        FileInputStream fileInputStream = null;
         FileOutputStream fileOutputStream = null;
+        BufferedInputStream bufferedInputStream = null;
+        BufferedOutputStream bos;
         try {
-            FileInputStream fileInputStream = new FileInputStream(localFile.toFile());
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+            fileInputStream = new FileInputStream(localFile.toFile());
+            bufferedInputStream = new BufferedInputStream(fileInputStream);
             fileOutputStream = new FileOutputStream(zippedFile.toFile());
-            BufferedOutputStream bos = new BufferedOutputStream(fileOutputStream);
-            final ZipOutputStream zip = new ZipOutputStream(bos);
+            bos = new BufferedOutputStream(fileOutputStream);
+            ZipOutputStream zip = new ZipOutputStream(bos);
             ZipEntry zipEntry = new ZipEntry(exstractionFileName);
             zip.putNextEntry(zipEntry);
             IOUtils.copy(bufferedInputStream, zip);
@@ -136,8 +181,15 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             }
             throw new RuntimeException(e);
         } finally {
-            assert fileOutputStream != null;
-            fileOutputStream.close();
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (bufferedInputStream != null) {
+                bufferedInputStream.close();
+            }
         }
 
         if (log.isInfoEnabled()) {
@@ -172,12 +224,12 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executed) {
 
-                List<Map<String,Object>> paymentInstruments = paymentInstrumentManagerDao
+                List<String> hashedPans = paymentInstrumentManagerDao
                         .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, pageSize);
 
-                paymentInstrumentManagerDao.insertPaymentInstruments(paymentInstruments);
+                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
 
-                if (paymentInstruments.isEmpty() || paymentInstruments.size() < pageSize) {
+                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
                     executed = true;
                 } else {
                     offset += pageSize;
@@ -202,8 +254,10 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executed) {
 
-                List<Map<String,Object>> hashedPans = paymentInstrumentManagerDao
+                List<String> hashedPans = paymentInstrumentManagerDao
                         .getFAActiveHashPANs(executionDate, offset, pageSize);
+
+                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
 
                 if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
                     executed = true;

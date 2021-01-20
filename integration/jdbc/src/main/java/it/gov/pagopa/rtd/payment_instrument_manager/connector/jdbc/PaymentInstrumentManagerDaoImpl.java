@@ -8,12 +8,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
 class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
-
 
     private final JdbcTemplate rtdJdbcTemplate;
     private final JdbcTemplate awardJdbcTemplate;
@@ -46,13 +44,13 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public List<Map<String,Object>> getBPDActiveHashPANs(
+    public List<String> getBPDActiveHashPANs(
             String executionDate, String startDate, String endDate, Long offset, Long size) {
 
         log.info("PaymentInstrumentManagerDaoImpl.getBPDActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "SELECT temp_pi.hpan_s as hpan, temp_pi.insert_date as insert_date FROM " +
+        String queryTemplate = "SELECT temp_pi.hpan_s as hpan FROM " +
                 "(SELECT DISTINCT bpi.hpan_s, MAX(bpi.insert_date_t) as insert_date, MAX(bpi.activation_t) " +
                 "FROM bpd_payment_instrument.bpd_payment_instrument_history bpi " +
                 "WHERE activation_t >= '" + executionDate + "' AND activation_t <= '" + startDate +
@@ -61,30 +59,29 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 " ORDER BY temp_pi.insert_date";
 
         if (offset != null && size != null) {
-            queryTemplate = queryTemplate.concat(" OFFSET " + offset + "LIMIT " +size);
+            queryTemplate = queryTemplate.concat(" OFFSET " + offset + " LIMIT " +size);
         }
 
-        queryTemplate = queryTemplate.concat(") temp_pi");
-
-        return bpdJdbcTemplate.queryForList(queryTemplate);
+        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
 
     }
 
     @Override
-    public List<Map<String,Object>> getFAActiveHashPANs(String executionDate, Long offset, Long size) {
+    public List<String> getFAActiveHashPANs(String executionDate, Long offset, Long size) {
 
         log.info("PaymentInstrumentManagerDaoImpl.getFAActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "select hpan_s as hpan, insert_date_t as insert_date" +
-                " from fa_payment_instrument where enabled_b=true " +
+        String queryTemplate = "select hpan_s as hpan" +
+                " from fa_payment_instrument where enabled_b=true AND insert_date_t >= '"
+                + executionDate + "'" +
                 "order by insert_date_t";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
         }
 
-        return faJdbcTemplate.queryForList(queryTemplate);
+        return faJdbcTemplate.queryForList(queryTemplate, String.class);
 
     }
 
@@ -93,15 +90,48 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.getExecutionData");
 
-        String queryTemplate = "select execution_date_t from batch_exec_data limit 1";
+        String queryTemplate = "select execution_date_t from rtd_batch_exec_data limit 1";
 
         return rtdJdbcTemplate.queryForObject(queryTemplate, String.class);
 
     }
 
     @Override
-    public void insertPaymentInstruments(List<Map<String, Object>> paymentInstruments) {
+    public void insertPaymentInstruments(List<String> paymentInstruments) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
+
+        String queryTemplate = "INSERT INTO rtd_test.rtd_payment_instrument_data(hpan_s) VALUES (?)" +
+                " ON CONFLICT DO NOTHING";
+
+        rtdJdbcTemplate.batchUpdate(
+                queryTemplate,
+                paymentInstruments,
+                10000,
+                (ps, argument) -> ps.setString(1, argument));
 
     }
+
+    public List<String> getActiveHashPANs(Long offset, Long size) {
+
+        String queryTemplate = "select * from payment_instrument_hpans order by hpan_s";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return rtdJdbcTemplate.queryForList(queryTemplate, String.class);
+    }
+
+    public void updateExecutionDate(String executionDate) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.updateExecutionDate");
+
+        String queryTemplate = "UPDATE rtd_test.rtd_batch_exec_data SET execution_date_t='"
+                + executionDate +"'";
+
+        rtdJdbcTemplate.update(queryTemplate);
+    }
+
 
 }
