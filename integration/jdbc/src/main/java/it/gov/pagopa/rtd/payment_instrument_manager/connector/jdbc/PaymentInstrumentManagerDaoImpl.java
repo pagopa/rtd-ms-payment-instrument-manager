@@ -53,8 +53,8 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         String queryTemplate = "SELECT temp_pi.hpan_s as hpan FROM " +
                 "(SELECT DISTINCT bpi.hpan_s, MAX(bpi.insert_date_t) as insert_date, MAX(bpi.activation_t) " +
                 "FROM bpd_payment_instrument_history bpi " +
-                "WHERE activation_t >= '" + executionDate + "' AND activation_t <= '" + startDate +
-                "' AND (deactivation_t IS NULL OR deactivation_t >= '" + endDate + "')" +
+                " WHERE activation_t >= '" + executionDate + "' " +
+                " AND (deactivation_t IS NULL OR deactivation_t >= '" + startDate + "')" +
                 " GROUP BY hpan_s) temp_pi" +
                 " ORDER BY temp_pi.insert_date";
 
