@@ -37,7 +37,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         log.info("PaymentInstrumentManagerDaoImpl.getAwardPeriods");
 
         String queryTemplate = "SELECT min(aw_period_start_d) as start_date, max(aw_period_end_d) as end_date " +
-                "FROM bpd_award_period.bpd_award_period WHERE aw_period_start_d <= current_date AND " +
+                "FROM bpd_award_period WHERE aw_period_start_d <= current_date AND " +
                 "aw_period_end_d >= current_date";
 
         return awardJdbcTemplate.queryForMap(queryTemplate);
@@ -52,9 +52,9 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         String queryTemplate = "SELECT temp_pi.hpan_s as hpan FROM " +
                 "(SELECT DISTINCT bpi.hpan_s, MAX(bpi.insert_date_t) as insert_date, MAX(bpi.activation_t) " +
-                "FROM bpd_payment_instrument.bpd_payment_instrument_history bpi " +
-                "WHERE activation_t >= '" + executionDate + "' AND activation_t <= '" + startDate +
-                "' AND (deactivation_t IS NULL OR deactivation_t >= '" + endDate + "')" +
+                "FROM bpd_payment_instrument_history bpi " +
+                " WHERE activation_t >= '" + executionDate + "' " +
+                " AND (deactivation_t IS NULL OR deactivation_t >= '" + startDate + "')" +
                 " GROUP BY hpan_s) temp_pi" +
                 " ORDER BY temp_pi.insert_date";
 
@@ -101,7 +101,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
 
-        String queryTemplate = "INSERT INTO rtd_test.rtd_payment_instrument_data(hpan_s) VALUES (?)" +
+        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s) VALUES (?)" +
                 " ON CONFLICT DO NOTHING";
 
         rtdJdbcTemplate.batchUpdate(
@@ -127,7 +127,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.updateExecutionDate");
 
-        String queryTemplate = "UPDATE rtd_test.rtd_batch_exec_data SET execution_date_t='"
+        String queryTemplate = "UPDATE rtd_batch_exec_data SET execution_date_t='"
                 + executionDate +"'";
 
         rtdJdbcTemplate.update(queryTemplate);
