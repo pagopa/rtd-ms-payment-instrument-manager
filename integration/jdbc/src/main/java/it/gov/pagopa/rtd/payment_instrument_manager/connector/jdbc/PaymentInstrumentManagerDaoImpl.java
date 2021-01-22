@@ -50,17 +50,20 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         log.info("PaymentInstrumentManagerDaoImpl.getBPDActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "SELECT temp_pi.hpan_s as hpan FROM " +
-                "(SELECT DISTINCT bpi.hpan_s, MAX(bpi.insert_date_t) as insert_date, MAX(bpi.activation_t) " +
-                "FROM bpd_payment_instrument_history bpi " +
-                " WHERE activation_t >= '" + executionDate + "' " +
-                " AND (deactivation_t IS NULL OR deactivation_t >= '" + startDate + "')" +
-                " GROUP BY hpan_s) temp_pi" +
-                " ORDER BY temp_pi.insert_date";
+        String queryTemplate = "SELECT bpi.hpan_s" +
+                " FROM bpd_payment_instrument.bpd_payment_instrument bpi," +
+                " bpd_payment_instrument.bpd_payment_instrument_history bpih " +
+                "WHERE bpih. activation_t >= '" + executionDate + "' " +
+                " AND (bpih.deactivation_t IS NULL OR bpih.deactivation_t >=  '" + startDate + "')" +
+                " AND bpi.hpan_s = bpih.hpan_s " +
+                "ORDER BY bpi.insert_date_t ";
+
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" OFFSET " + offset + " LIMIT " +size);
         }
+
+        queryTemplate = queryTemplate.concat(") temp_pi ORDER BY temp_pi.insert_date");
 
         return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
 
