@@ -63,8 +63,6 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
             queryTemplate = queryTemplate.concat(" OFFSET " + offset + " LIMIT " +size);
         }
 
-        queryTemplate = queryTemplate.concat(") temp_pi ORDER BY temp_pi.insert_date");
-
         return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
 
     }
