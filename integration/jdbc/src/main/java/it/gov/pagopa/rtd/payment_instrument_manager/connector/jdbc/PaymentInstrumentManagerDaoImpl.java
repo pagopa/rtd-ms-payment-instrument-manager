@@ -115,7 +115,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
     public List<String> getActiveHashPANs(Long offset, Long size) {
 
-        String queryTemplate = "select * from payment_instrument_hpans order by hpan_s";
+        String queryTemplate = "select * from rtd_payment_instrument_data order by hpan_s";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
