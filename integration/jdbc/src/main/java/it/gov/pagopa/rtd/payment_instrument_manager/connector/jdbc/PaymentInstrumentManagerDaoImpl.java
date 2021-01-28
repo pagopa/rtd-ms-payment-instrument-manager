@@ -38,7 +38,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         String queryTemplate = "SELECT min(aw_period_start_d) as start_date, max(aw_period_end_d) as end_date " +
                 "FROM bpd_award_period WHERE aw_period_start_d <= current_date AND " +
-                "aw_period_end_d >= current_date";
+                "aw_period_end_d + aw_grace_period_n >= current_date";
 
         return awardJdbcTemplate.queryForMap(queryTemplate);
     }
