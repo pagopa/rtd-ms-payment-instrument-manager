@@ -38,20 +38,33 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private final String exstractionFileName;
     private final PaymentInstrumentManagerDao paymentInstrumentManagerDao;
     private final AzureBlobClient azureBlobClient;
-    private final Long pageSize;
+    private final Long extractionPageSize;
+    private final Long insertPageSize;
+    private final int insertBatchSize;
+    private final Long deletePageSize;
+    private final int deleteBatchSize;
+
 
 
     @Autowired
     public PaymentInstrumentManagerServiceImpl(
             PaymentInstrumentManagerDao paymentInstrumentManagerDao,
             AzureBlobClient azureBlobClient,
-            @Value("${batchConfiguration.paymentInstrumentsExtraction.pageSize}") Long pageSize,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.extraction.pageSize}") Long extractionPageSize,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.insert.pageSize}") Long insertPageSize,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.insert.batchSize}") int insertBatchSize,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.delete.pageSize}") Long deletePageSize,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.delete.batchSize}") int deleteBatchSize,
             @Value("${blobStorageConfiguration.containerReference}") String containerReference,
             @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension) {
         this.paymentInstrumentManagerDao = paymentInstrumentManagerDao;
         this.azureBlobClient = azureBlobClient;
         this.containerReference = containerReference;
-        this.pageSize = pageSize;
+        this.extractionPageSize = extractionPageSize;
+        this.insertPageSize = insertPageSize;
+        this.insertBatchSize = insertBatchSize;
+        this.deletePageSize = deletePageSize;
+        this.deleteBatchSize = deleteBatchSize;
         this.blobReference = blobReferenceNoExtension.concat(".zip");
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
     }
@@ -98,10 +111,12 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         String saveExecutionDate = OffsetDateTime.now().toString();
 
-        String startExecutionDate = paymentInstrumentManagerDao.getRtdExecutionDate();
+        Map<String,Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
 
-        writeBpdHpansToRtd(startExecutionDate, startDate, endDate);
-        writeFaHpansToRtd(startExecutionDate);
+        writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
+        writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
+        disableBpdHpans(String.valueOf(executionDates.get("bpd_exec_date")),endDate);
+        disableFaHpans(String.valueOf(executionDates.get("fa_exec_date")));
 
         paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDate);
 
@@ -140,15 +155,15 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         while (!executed) {
 
-            Set<String> hashedPans = getActiveHashPANs(offset, pageSize);
+            Set<String> hashedPans = getActiveHashPANs(offset, extractionPageSize);
             for (String hashPan : hashedPans) {
                 bufferedWriter.write(hashPan.concat(System.lineSeparator()));
             }
 
-            if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+            if (hashedPans.isEmpty() || hashedPans.size() < extractionPageSize) {
                 executed = true;
             } else {
-                offset += pageSize;
+                offset += extractionPageSize;
             }
 
             bufferedWriter.flush();
@@ -225,14 +240,14 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             while (!executed) {
 
                 List<String> hashedPans = paymentInstrumentManagerDao
-                        .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, pageSize);
+                        .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, insertPageSize);
 
-                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
+                paymentInstrumentManagerDao.insertBpdPaymentInstruments(hashedPans,insertBatchSize);
 
-                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                if (hashedPans.isEmpty() || hashedPans.size() < insertPageSize) {
                     executed = true;
                 } else {
-                    offset += pageSize;
+                    offset += insertPageSize;
                 }
 
             }
@@ -255,14 +270,72 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             while (!executed) {
 
                 List<String> hashedPans = paymentInstrumentManagerDao
-                        .getFAActiveHashPANs(executionDate, offset, pageSize);
+                        .getFAActiveHashPANs(executionDate, offset, insertPageSize);
 
-                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
+                paymentInstrumentManagerDao.insertFaPaymentInstruments(hashedPans,insertBatchSize);
 
-                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                if (hashedPans.isEmpty() || hashedPans.size() < insertPageSize) {
                     executed = true;
                 } else {
-                    offset += pageSize;
+                    offset += insertPageSize;
+                }
+
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+            throw e;
+        }
+
+    }
+
+    private void disableBpdHpans(String executionDate, String startDate) {
+
+        try {
+
+            boolean executed = false;
+            long offset = 0L;
+
+            while (!executed) {
+
+                List<String> hashedPans = paymentInstrumentManagerDao
+                        .getBpdDisabledPans(executionDate, startDate, offset, deletePageSize);
+
+                paymentInstrumentManagerDao.disableBpdPaymentInstruments(hashedPans,deleteBatchSize);
+
+                if (hashedPans.isEmpty() || hashedPans.size() < deletePageSize) {
+                    executed = true;
+                } else {
+                    offset += deletePageSize;
+                }
+
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+            throw e;
+        }
+
+    }
+
+    private void disableFaHpans(String executionDate) {
+
+        try {
+
+            boolean executed = false;
+            long offset = 0L;
+
+            while (!executed) {
+
+                List<String> hashedPans = paymentInstrumentManagerDao
+                        .getFaDisabledPans(executionDate, offset, deletePageSize);
+
+                paymentInstrumentManagerDao.disableFaPaymentInstruments(hashedPans, deleteBatchSize);
+
+                if (hashedPans.isEmpty() || hashedPans.size() < deletePageSize) {
+                    executed = true;
+                } else {
+                    offset += deletePageSize;
                 }
 
             }
