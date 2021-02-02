@@ -4,18 +4,30 @@ import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.Azur
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exception.AzureBlobDirectAccessException;
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exception.AzureBlobUploadException;
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.jdbc.PaymentInstrumentManagerDao;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
 
 @Service
 @Slf4j
@@ -26,24 +38,29 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private final String exstractionFileName;
     private final PaymentInstrumentManagerDao paymentInstrumentManagerDao;
     private final AzureBlobClient azureBlobClient;
+    private final Long pageSize;
 
 
     @Autowired
-    public PaymentInstrumentManagerServiceImpl(PaymentInstrumentManagerDao paymentInstrumentManagerDao,
-                                               AzureBlobClient azureBlobClient,
-                                               @Value("${blobStorageConfiguration.containerReference}") String containerReference,
-                                               @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension) {
+    public PaymentInstrumentManagerServiceImpl(
+            PaymentInstrumentManagerDao paymentInstrumentManagerDao,
+            AzureBlobClient azureBlobClient,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.pageSize}") Long pageSize,
+            @Value("${blobStorageConfiguration.containerReference}") String containerReference,
+            @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension) {
         this.paymentInstrumentManagerDao = paymentInstrumentManagerDao;
         this.azureBlobClient = azureBlobClient;
         this.containerReference = containerReference;
+        this.pageSize = pageSize;
         this.blobReference = blobReferenceNoExtension.concat(".zip");
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
     }
 
     @Override
     public String getDownloadLink() {
-        if (log.isDebugEnabled()) {
-            log.debug("PaymentInstrumentManagerServiceImpl.getDownloadLink");
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getDownloadLink");
         }
 
         try {
@@ -55,55 +72,138 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             }
             throw new RuntimeException(e);
         }
+
     }
 
     @Scheduled(cron = "${batchConfiguration.paymentInstrumentsExtraction.cron}")
     public void generateFileForAcquirer() {
-        log.info("PaymentInstrumentManagerServiceImpl.generateFileForAcquirer");
-        uploadHashedPans(getActiveHashPANs());
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.generateFileForAcquirer");
+        }
+
+        uploadHashedPans();
+
     }
 
-    private Set<String> getActiveHashPANs() {
-        if (log.isDebugEnabled()) {
-            log.debug("PaymentInstrumentManagerServiceImpl.getActiveHashPANs");
+    public void refreshActiveHpans() {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.refreshActiveHpans");
         }
 
-        return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs());
+        Map<String,Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
+        String startDate = String.valueOf(awardPeriodData.get("start_date"));
+        String endDate = String.valueOf(awardPeriodData.get("end_date"));
+
+        String saveExecutionDate = OffsetDateTime.now().toString();
+
+        String startExecutionDate = paymentInstrumentManagerDao.getRtdExecutionDate();
+
+        writeBpdHpansToRtd(startExecutionDate, startDate, endDate);
+        writeFaHpansToRtd(startExecutionDate);
+
+        paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDate);
+
     }
 
-    private void uploadHashedPans(Set<String> hashedPans) {
-        if (log.isDebugEnabled()) {
-            log.debug("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
-            log.debug("hashedPans.size = " + hashedPans.size());
+    private Set<String> getActiveHashPANs(Long offset, Long size) {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getActiveHashPANs" +
+                    " offset: " + offset + ", size: " + size);
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("Compressing hashed pans");
+        return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs(offset, size));
+    }
+
+    @SneakyThrows
+    private void uploadHashedPans() {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
         }
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        Path zippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
+        Path localFile = Files.createTempFile("tempFile".split("\\.")[0],".csv");
+
+        FileUtils.forceDelete(localFile.toFile());
+        FileUtils.forceDelete(zippedFile.toFile());
+
+        refreshActiveHpans();
+
+        BufferedWriter bufferedWriter = Files.newBufferedWriter(localFile,
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+
+        boolean executed = false;
+        long offset = 0L;
+
+        while (!executed) {
+
+            Set<String> hashedPans = getActiveHashPANs(offset, pageSize);
+            for (String hashPan : hashedPans) {
+                bufferedWriter.write(hashPan.concat(System.lineSeparator()));
+            }
+
+            if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                executed = true;
+            } else {
+                offset += pageSize;
+            }
+
+            bufferedWriter.flush();
+
+        }
+
+        bufferedWriter.close();
+
+        if (log.isInfoEnabled()) {
+            log.info("Compressing hashed pans");
+        }
+
+        FileInputStream fileInputStream = null;
+        FileOutputStream fileOutputStream = null;
+        BufferedInputStream bufferedInputStream = null;
+        BufferedOutputStream bos;
         try {
-            final ZipOutputStream zip = new ZipOutputStream(outputStream);
+            fileInputStream = new FileInputStream(localFile.toFile());
+            bufferedInputStream = new BufferedInputStream(fileInputStream);
+            fileOutputStream = new FileOutputStream(zippedFile.toFile());
+            bos = new BufferedOutputStream(fileOutputStream);
+            ZipOutputStream zip = new ZipOutputStream(bos);
             ZipEntry zipEntry = new ZipEntry(exstractionFileName);
             zip.putNextEntry(zipEntry);
-            for (String hashPan : hashedPans) {
-                zip.write(hashPan.getBytes());
-                zip.write(System.lineSeparator().getBytes());
-            }
+            IOUtils.copy(bufferedInputStream, zip);
             zip.close();
         } catch (IOException e) {
             if (log.isErrorEnabled()) {
                 log.error("Failed to compress hashed pans list", e);
             }
             throw new RuntimeException(e);
+        } finally {
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (bufferedInputStream != null) {
+                bufferedInputStream.close();
+            }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("Uploading compressed hashed pans");
+        if (log.isInfoEnabled()) {
+            log.info("Uploading compressed hashed pans");
         }
+
         try {
 
-            azureBlobClient.upload(containerReference, blobReference, outputStream.toByteArray());
-            log.info("Uploaded hashed pan list");
+            azureBlobClient.upload(containerReference, blobReference, zippedFile.toFile().getAbsolutePath());
+            FileUtils.forceDelete(localFile.toFile());
+            FileUtils.forceDelete(zippedFile.toFile());
+            if (log.isInfoEnabled()) {
+                log.info("Uploaded hashed pan list");
+            }
 
         } catch (AzureBlobUploadException e) {
             if (log.isErrorEnabled()) {
@@ -111,6 +211,67 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             }
             throw new RuntimeException(e);
         }
+
+    }
+
+    @SneakyThrows
+    private void writeBpdHpansToRtd(String executionDate, String startDate, String endDate) {
+
+        try {
+
+            boolean executed = false;
+            long offset = 0L;
+
+            while (!executed) {
+
+                List<String> hashedPans = paymentInstrumentManagerDao
+                        .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, pageSize);
+
+                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
+
+                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                    executed = true;
+                } else {
+                    offset += pageSize;
+                }
+
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+            throw e;
+        }
+
+    }
+
+    @SneakyThrows
+    private void writeFaHpansToRtd(String executionDate) {
+
+        try {
+
+            boolean executed = false;
+            long offset = 0L;
+
+            while (!executed) {
+
+                List<String> hashedPans = paymentInstrumentManagerDao
+                        .getFAActiveHashPANs(executionDate, offset, pageSize);
+
+                paymentInstrumentManagerDao.insertPaymentInstruments(hashedPans);
+
+                if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
+                    executed = true;
+                } else {
+                    offset += pageSize;
+                }
+
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+            throw e;
+        }
+
     }
 
 }

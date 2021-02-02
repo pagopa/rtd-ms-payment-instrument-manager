@@ -10,9 +10,11 @@ import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exce
 import it.gov.pagopa.rtd.payment_instrument_manager.connector.azure_storage.exception.AzureBlobUploadException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
@@ -97,10 +99,10 @@ class AzureBlobClientImpl implements AzureBlobClient {
     }
 
     @Override
-    public void upload(String containerReference, String blobReference, byte[] content) throws AzureBlobUploadException {
+    public void upload(String containerReference, String blobReference, String zipFile) throws AzureBlobUploadException {
         if (log.isDebugEnabled()) {
             log.debug("AzureBlobClientImpl.upload");
-            log.debug("containerReference = " + containerReference + ", blobReference = " + blobReference + ", content.length = " + content.length);
+            log.debug("containerReference = " + containerReference + ", blobReference = " + blobReference + ", zipFile = " + zipFile);
         }
 
         try {
@@ -114,8 +116,8 @@ class AzureBlobClientImpl implements AzureBlobClient {
             blobContainer.createIfNotExists(BlobContainerPublicAccessType.OFF, new BlobRequestOptions(), new OperationContext());
 
             final CloudBlockBlob blob = blobContainer.getBlockBlobReference(blobReference);
-            blob.getMetadata().put("sha256", DigestUtils.sha256Hex(content));
-            blob.uploadFromByteArray(content, 0, content.length);
+            blob.getMetadata().put("sha256", DigestUtils.sha256Hex(FileUtils.openInputStream(new File(zipFile))));
+            blob.uploadFromFile(zipFile);
 
             if (log.isDebugEnabled()) {
                 log.debug(String.format("Uploaded %s", blobReference));
