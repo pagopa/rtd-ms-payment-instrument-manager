@@ -198,9 +198,10 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
                 if (offset % numberPerFile == 0) {
                     tempBufferedWriter.close();
-                    currentId = currentId + 1;
 
-                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, String.valueOf(currentId));
+                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, currentId+1);
+
+                    currentId = currentId + 1;
 
                     tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
                             .concat("_").concat(String.valueOf(currentId)), ".zip");
@@ -219,18 +220,18 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         if (createPartialFile) {
             tempBufferedWriter.close();
-            zipAndUpload(tempFileLocalFile, tempFileZippedFile, null);
+            zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, null);
         }
 
         if (createGeneralFile) {
             generalBufferedWriter.close();
-            zipAndUpload(generalLocalFile, generalZippedFile, null);
+            zipAndUpload(generalLocalFile, generalZippedFile, null,null);
         }
 
     }
 
     @SneakyThrows
-    private void zipAndUpload(Path localFile, Path zippedFile, String nextFile) {
+    private void zipAndUpload(Path localFile, Path zippedFile, Long currentFile, Long nextFile) {
 
         if (log.isInfoEnabled()) {
             log.info("Compressing hashed pans");
@@ -273,8 +274,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         try {
 
-            azureBlobClient.upload(containerReference, blobReference,
-                    zippedFile.toFile().getAbsolutePath(), nextFile);
+            azureBlobClient.upload(containerReference,
+                    currentFile == null ? blobReference : blobReference.concat(String.valueOf(currentFile)),
+                    zippedFile.toFile().getAbsolutePath(), String.valueOf(nextFile));
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
             if (log.isInfoEnabled()) {
