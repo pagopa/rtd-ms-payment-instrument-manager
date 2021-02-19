@@ -39,6 +39,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private final PaymentInstrumentManagerDao paymentInstrumentManagerDao;
     private final AzureBlobClient azureBlobClient;
     private final Long pageSize;
+    private final Long numberPerFile;
+    private final Boolean createPartialFile;
+    private final Boolean createGeneralFile;
 
 
     @Autowired
@@ -47,13 +50,20 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             AzureBlobClient azureBlobClient,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.pageSize}") Long pageSize,
             @Value("${blobStorageConfiguration.containerReference}") String containerReference,
-            @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension) {
+            @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.numberPerFile}") Long numberPerFile,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.createGeneralFile}") Boolean createGeneralFile,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.createPartialFile}") Boolean createPartialFile
+    ) {
         this.paymentInstrumentManagerDao = paymentInstrumentManagerDao;
         this.azureBlobClient = azureBlobClient;
         this.containerReference = containerReference;
         this.pageSize = pageSize;
+        this.numberPerFile = numberPerFile;
         this.blobReference = blobReferenceNoExtension.concat(".zip");
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
+        this.createGeneralFile = createGeneralFile;
+        this.createPartialFile = createPartialFile;
     }
 
     @Override
@@ -124,25 +134,53 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.info("PaymentInstrumentManagerServiceImpl.uploadHashedPans");
         }
 
-        Path zippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
-        Path localFile = Files.createTempFile("tempFile".split("\\.")[0],".csv");
-
-        FileUtils.forceDelete(localFile.toFile());
-        FileUtils.forceDelete(zippedFile.toFile());
-
         refreshActiveHpans();
 
-        BufferedWriter bufferedWriter = Files.newBufferedWriter(localFile,
-                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+        BufferedWriter generalBufferedWriter = null;
+        Path generalZippedFile = null;
+        Path generalLocalFile = null;
+        if (createGeneralFile) {
+            generalZippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
+            generalLocalFile = Files.createTempFile("tempFile".split("\\.")[0], ".csv");
+
+            FileUtils.forceDelete(generalLocalFile.toFile());
+            FileUtils.forceDelete(generalZippedFile.toFile());
+
+            generalBufferedWriter = Files.newBufferedWriter(generalLocalFile,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+        }
 
         boolean executed = false;
         long offset = 0L;
+        long currentId = 1;
+
+        BufferedWriter tempBufferedWriter = null;
+        Path tempFileZippedFile = null;
+        Path tempFileLocalFile = null;
+        if (createPartialFile) {
+            tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
+                    .concat("_").concat(String.valueOf(currentId)), ".zip");
+            tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
+                    .concat("_").concat(String.valueOf(currentId)), ".csv");
+
+            FileUtils.forceDelete(tempFileZippedFile.toFile());
+            FileUtils.forceDelete(tempFileLocalFile.toFile());
+            
+            tempBufferedWriter = Files.newBufferedWriter(
+                    tempFileLocalFile, StandardOpenOption.CREATE_NEW, 
+                    StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+        }
 
         while (!executed) {
 
             Set<String> hashedPans = getActiveHashPANs(offset, pageSize);
-            for (String hashPan : hashedPans) {
-                bufferedWriter.write(hashPan.concat(System.lineSeparator()));
+             for (String hashPan : hashedPans) {
+                 if (createGeneralFile) {
+                     generalBufferedWriter.write(hashPan.concat(System.lineSeparator()));
+                 }
+                if (createPartialFile) {
+                    tempBufferedWriter.write(hashPan.concat(System.lineSeparator()));
+                }
             }
 
             if (hashedPans.isEmpty() || hashedPans.size() < pageSize) {
@@ -151,11 +189,48 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 offset += pageSize;
             }
 
-            bufferedWriter.flush();
+            if (createGeneralFile) {
+                generalBufferedWriter.flush();
+            }
+
+            if (createPartialFile) {
+                tempBufferedWriter.flush();
+
+                if (offset % numberPerFile == 0) {
+                    tempBufferedWriter.close();
+                    currentId = currentId + 1;
+
+                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, String.valueOf(currentId));
+
+                    tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
+                            .concat("_").concat(String.valueOf(currentId)), ".zip");
+                    tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
+                            .concat("_").concat(String.valueOf(currentId)), ".csv");
+
+                    FileUtils.forceDelete(tempFileZippedFile.toFile());
+                    FileUtils.forceDelete(tempFileLocalFile.toFile());
+
+                    tempBufferedWriter = Files.newBufferedWriter(tempFileLocalFile,
+                            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                }
+            }
 
         }
 
-        bufferedWriter.close();
+        if (createPartialFile) {
+            tempBufferedWriter.close();
+            zipAndUpload(tempFileLocalFile, tempFileZippedFile, null);
+        }
+
+        if (createGeneralFile) {
+            generalBufferedWriter.close();
+            zipAndUpload(generalLocalFile, generalZippedFile, null);
+        }
+
+    }
+
+    @SneakyThrows
+    private void zipAndUpload(Path localFile, Path zippedFile, String nextFile) {
 
         if (log.isInfoEnabled()) {
             log.info("Compressing hashed pans");
@@ -198,7 +273,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         try {
 
-            azureBlobClient.upload(containerReference, blobReference, zippedFile.toFile().getAbsolutePath());
+            azureBlobClient.upload(containerReference, blobReference,
+                    zippedFile.toFile().getAbsolutePath(), nextFile);
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
             if (log.isInfoEnabled()) {
@@ -211,7 +287,6 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             }
             throw new RuntimeException(e);
         }
-
     }
 
     @SneakyThrows
