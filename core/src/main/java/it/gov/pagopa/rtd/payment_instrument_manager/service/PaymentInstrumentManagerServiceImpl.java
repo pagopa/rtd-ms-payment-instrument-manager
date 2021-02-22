@@ -67,14 +67,16 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     }
 
     @Override
-    public String getDownloadLink() {
+    public String getDownloadLink(String filePartId) {
 
         if (log.isInfoEnabled()) {
             log.info("PaymentInstrumentManagerServiceImpl.getDownloadLink");
         }
 
         try {
-            return azureBlobClient.getDirectAccessLink(containerReference, blobReference);
+            return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
+                    blobReference : blobReference.split("\\.")[0]
+                    .concat("_").concat(filePartId).concat( ".zip"));
 
         } catch (AzureBlobDirectAccessException e) {
             if (log.isErrorEnabled()) {
@@ -275,7 +277,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         try {
 
             azureBlobClient.upload(containerReference,
-                    currentFile == null ? blobReference : blobReference.concat(String.valueOf(currentFile)),
+                    currentFile == null ? blobReference : blobReference.split("\\.")[0]
+                            .concat("_").concat(String.valueOf(currentFile)).concat( ".zip"),
                     zippedFile.toFile().getAbsolutePath(), String.valueOf(nextFile));
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());

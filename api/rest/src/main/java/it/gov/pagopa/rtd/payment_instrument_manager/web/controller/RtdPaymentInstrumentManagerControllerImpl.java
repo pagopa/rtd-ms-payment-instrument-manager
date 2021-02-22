@@ -21,11 +21,12 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
 
 
     @Override
-    public void getHashedPans(HttpServletResponse httpServletResponse) {
+    public void getHashedPans(HttpServletResponse httpServletResponse,
+                              String filePartId) {
         if (log.isDebugEnabled()) {
             log.debug("RtdPaymentInstrumentManagerControllerImpl.getHashedPans");
         }
-        final String downloadLink = paymentInstrumentManagerService.getDownloadLink();
+        final String downloadLink = paymentInstrumentManagerService.getDownloadLink(filePartId);
         if (log.isDebugEnabled()) {
             log.debug("downloadLink = " + downloadLink);
         }
