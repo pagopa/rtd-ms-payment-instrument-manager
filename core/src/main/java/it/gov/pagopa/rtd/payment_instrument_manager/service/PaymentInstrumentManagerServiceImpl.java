@@ -279,7 +279,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             azureBlobClient.upload(containerReference,
                     currentFile == null ? blobReference : blobReference.split("\\.")[0]
                             .concat("_").concat(String.valueOf(currentFile)).concat( ".zip"),
-                    zippedFile.toFile().getAbsolutePath(), String.valueOf(nextFile));
+                    zippedFile.toFile().getAbsolutePath(),
+                    nextFile != null ? String.valueOf(nextFile) : null);
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
             if (log.isInfoEnabled()) {
