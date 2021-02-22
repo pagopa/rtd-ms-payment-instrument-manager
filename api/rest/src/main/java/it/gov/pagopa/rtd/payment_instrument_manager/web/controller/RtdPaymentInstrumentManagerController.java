@@ -15,7 +15,7 @@ public interface RtdPaymentInstrumentManagerController {
     @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
     void getHashedPans(HttpServletResponse httpServletResponse,
-                       @RequestParam(value = "filePartId") String filePartId);
+                       @RequestParam(value = "filePartId", required = false) String filePartId);
 
     @PostMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)
