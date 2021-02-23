@@ -2,10 +2,7 @@ package it.gov.pagopa.rtd.payment_instrument_manager.web.controller;
 
 import io.swagger.annotations.Api;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -17,7 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 public interface RtdPaymentInstrumentManagerController {
     @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
-    void getHashedPans(HttpServletResponse httpServletResponse);
+    void getHashedPans(HttpServletResponse httpServletResponse,
+                       @RequestParam(value = "filePartId", required = false) String filePartId);
 
     @PostMapping("/active-hpans")
     @ResponseStatus(HttpStatus.OK)

@@ -28,7 +28,10 @@ import static org.mockito.Mockito.*;
         properties = {
                 "batchConfiguration.paymentInstrumentsExtraction.pageSize=100",
                 "blobStorageConfiguration.blobReferenceNoExtension=test",
-                "blobStorageConfiguration.containerReference=demo"
+                "blobStorageConfiguration.containerReference=demo",
+                "batchConfiguration.paymentInstrumentsExtraction.numberPerFile=100",
+                "batchConfiguration.paymentInstrumentsExtraction.createGeneralFile=true",
+                "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false"
         })
 public class PaymentInstrumentManagerServiceImplTest {
 
@@ -59,7 +62,7 @@ public class PaymentInstrumentManagerServiceImplTest {
         when(azureBlobClientMock.getDirectAccessLink(anyString(), anyString()))
                 .thenReturn(UUID.randomUUID().toString());
 
-        final String link = paymentInstrumentManagerService.getDownloadLink();
+        final String link = paymentInstrumentManagerService.getDownloadLink(null);
 
         Assert.assertNotNull(link);
         verify(azureBlobClientMock, only()).getDirectAccessLink(anyString(), anyString());
@@ -72,7 +75,7 @@ public class PaymentInstrumentManagerServiceImplTest {
                 .thenThrow(new AzureBlobDirectAccessException());
 
         try {
-            paymentInstrumentManagerService.getDownloadLink();
+            paymentInstrumentManagerService.getDownloadLink(null);
         } catch (RuntimeException e) {
             Assert.assertEquals(AzureBlobDirectAccessException.class, e.getCause().getClass());
         }
@@ -84,18 +87,18 @@ public class PaymentInstrumentManagerServiceImplTest {
     @Test
     public void generateFileForAcquirer_OK() throws AzureBlobUploadException {
         doNothing()
-                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
+                .when(azureBlobClientMock).upload(anyString(), anyString(), any(), any());
 
         paymentInstrumentManagerService.generateFileForAcquirer();
 
-        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
+        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any(), any());
     }
 
 
     @Test
     public void generateFileForAcquirer_KO() throws AzureBlobUploadException {
         doThrow(new AzureBlobUploadException())
-                .when(azureBlobClientMock).upload(anyString(), anyString(), any());
+                .when(azureBlobClientMock).upload(anyString(), anyString(), any(), any());
 
         try {
             paymentInstrumentManagerService.generateFileForAcquirer();
@@ -103,7 +106,7 @@ public class PaymentInstrumentManagerServiceImplTest {
             Assert.assertEquals(AzureBlobUploadException.class, e.getCause().getClass());
         }
 
-        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any());
+        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any(), any());
     }
 
 }
