@@ -236,7 +236,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private void zipAndUpload(Path localFile, Path zippedFile, Long currentFile, Long nextFile) {
 
         if (log.isInfoEnabled()) {
-            log.info("Compressing hashed pans");
+            log.info(nextFile == null ? "Compressing hashed pans" : "Compressing partial hashed pans");
         }
 
         FileInputStream fileInputStream = null;
@@ -271,7 +271,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         }
 
         if (log.isInfoEnabled()) {
-            log.info("Uploading compressed hashed pans");
+            log.info(nextFile == null ?
+                    "Uploading compressed hashed pans" :
+                    "Uploading partial compressed hashed pans");
         }
 
         try {
@@ -283,8 +285,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                     nextFile != null ? String.valueOf(nextFile) : null);
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
+
             if (log.isInfoEnabled()) {
-                log.info("Uploaded hashed pan list");
+                log.info(nextFile == null ? "Uploaded hashed pan list" : "Uploaded partial hashed pan list");
             }
 
         } catch (AzureBlobUploadException e) {
