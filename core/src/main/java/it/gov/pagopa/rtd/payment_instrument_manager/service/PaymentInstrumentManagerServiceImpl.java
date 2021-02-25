@@ -153,6 +153,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         }
 
         boolean executed = false;
+        boolean lastSectionWritten = false;
         long offset = 0L;
         long currentId = 1;
 
@@ -201,26 +202,30 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 if (offset % numberPerFile == 0) {
                     tempBufferedWriter.close();
 
-                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, currentId+1);
+                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, !executed ? currentId+1 : null);
 
-                    currentId = currentId + 1;
+                    if (!executed) {
+                        currentId = currentId + 1;
 
-                    tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
-                            .concat("_").concat(String.valueOf(currentId)), ".zip");
-                    tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
-                            .concat("_").concat(String.valueOf(currentId)), ".csv");
+                        tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
+                                .concat("_").concat(String.valueOf(currentId)), ".zip");
+                        tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
+                                .concat("_").concat(String.valueOf(currentId)), ".csv");
 
-                    FileUtils.forceDelete(tempFileZippedFile.toFile());
-                    FileUtils.forceDelete(tempFileLocalFile.toFile());
+                        FileUtils.forceDelete(tempFileZippedFile.toFile());
+                        FileUtils.forceDelete(tempFileLocalFile.toFile());
 
-                    tempBufferedWriter = Files.newBufferedWriter(tempFileLocalFile,
-                            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                        tempBufferedWriter = Files.newBufferedWriter(tempFileLocalFile,
+                                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                    } else {
+                        lastSectionWritten = true;
+                    }
                 }
             }
 
         }
 
-        if (createPartialFile) {
+        if (createPartialFile && !lastSectionWritten) {
             tempBufferedWriter.close();
             zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, null);
         }
