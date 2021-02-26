@@ -66,7 +66,7 @@ public class PaymentInstrumentManagerServiceImplTest {
         when(azureBlobClientMock.getDirectAccessLink(anyString(), anyString()))
                 .thenReturn(UUID.randomUUID().toString());
 
-        final String link = paymentInstrumentManagerService.getDownloadLink();
+        final String link = paymentInstrumentManagerService.getDownloadLink(null);
 
         Assert.assertNotNull(link);
         verify(azureBlobClientMock, only()).getDirectAccessLink(anyString(), anyString());
@@ -79,7 +79,7 @@ public class PaymentInstrumentManagerServiceImplTest {
                 .thenThrow(new AzureBlobDirectAccessException());
 
         try {
-            paymentInstrumentManagerService.getDownloadLink();
+            paymentInstrumentManagerService.getDownloadLink(null);
         } catch (RuntimeException e) {
             Assert.assertEquals(AzureBlobDirectAccessException.class, e.getCause().getClass());
         }

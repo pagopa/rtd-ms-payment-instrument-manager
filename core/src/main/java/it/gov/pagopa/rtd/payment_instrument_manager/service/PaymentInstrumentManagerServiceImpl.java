@@ -78,14 +78,16 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     }
 
     @Override
-    public String getDownloadLink() {
+    public String getDownloadLink(String filePartId) {
 
         if (log.isInfoEnabled()) {
             log.info("PaymentInstrumentManagerServiceImpl.getDownloadLink");
         }
 
         try {
-            return azureBlobClient.getDirectAccessLink(containerReference, blobReference);
+            return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
+                    blobReference : blobReference.split("\\.")[0]
+                    .concat("_").concat(filePartId).concat( ".zip"));
 
         } catch (AzureBlobDirectAccessException e) {
             if (log.isErrorEnabled()) {
@@ -164,6 +166,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         }
 
         boolean executed = false;
+        boolean lastSectionWritten = false;
         long offset = 0L;
         long currentId = 1;
 
@@ -211,42 +214,47 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
                 if (offset % numberPerFile == 0) {
                     tempBufferedWriter.close();
-                    currentId = currentId + 1;
 
-                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, String.valueOf(currentId));
+                    zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, !executed ? currentId+1 : null);
 
-                    tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
-                            .concat("_").concat(String.valueOf(currentId)), ".zip");
-                    tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
-                            .concat("_").concat(String.valueOf(currentId)), ".csv");
+                    if (!executed) {
+                        currentId = currentId + 1;
 
-                    FileUtils.forceDelete(tempFileZippedFile.toFile());
-                    FileUtils.forceDelete(tempFileLocalFile.toFile());
+                        tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
+                                .concat("_").concat(String.valueOf(currentId)), ".zip");
+                        tempFileLocalFile = Files.createTempFile("tempFile".split("\\.")[0]
+                                .concat("_").concat(String.valueOf(currentId)), ".csv");
 
-                    tempBufferedWriter = Files.newBufferedWriter(tempFileLocalFile,
-                            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                        FileUtils.forceDelete(tempFileZippedFile.toFile());
+                        FileUtils.forceDelete(tempFileLocalFile.toFile());
+
+                        tempBufferedWriter = Files.newBufferedWriter(tempFileLocalFile,
+                                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                    } else {
+                        lastSectionWritten = true;
+                    }
                 }
             }
 
         }
 
-        if (createPartialFile) {
+        if (createPartialFile && !lastSectionWritten) {
             tempBufferedWriter.close();
-            zipAndUpload(tempFileLocalFile, tempFileZippedFile, null);
+            zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, null);
         }
 
         if (createGeneralFile) {
             generalBufferedWriter.close();
-            zipAndUpload(generalLocalFile, generalZippedFile, null);
+            zipAndUpload(generalLocalFile, generalZippedFile, null,null);
         }
 
     }
 
     @SneakyThrows
-    private void zipAndUpload(Path localFile, Path zippedFile, String nextFile) {
+    private void zipAndUpload(Path localFile, Path zippedFile, Long currentFile, Long nextFile) {
 
         if (log.isInfoEnabled()) {
-            log.info("Compressing hashed pans");
+            log.info(nextFile == null ? "Compressing hashed pans" : "Compressing partial hashed pans");
         }
 
         FileInputStream fileInputStream = null;
@@ -281,17 +289,23 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         }
 
         if (log.isInfoEnabled()) {
-            log.info("Uploading compressed hashed pans");
+            log.info(nextFile == null ?
+                    "Uploading compressed hashed pans" :
+                    "Uploading partial compressed hashed pans");
         }
 
         try {
 
-            azureBlobClient.upload(containerReference, blobReference,
-                    zippedFile.toFile().getAbsolutePath(), nextFile);
+            azureBlobClient.upload(containerReference,
+                    currentFile == null ? blobReference : blobReference.split("\\.")[0]
+                            .concat("_").concat(String.valueOf(currentFile)).concat( ".zip"),
+                    zippedFile.toFile().getAbsolutePath(),
+                    nextFile != null ? String.valueOf(nextFile) : null);
             FileUtils.forceDelete(localFile.toFile());
             FileUtils.forceDelete(zippedFile.toFile());
+
             if (log.isInfoEnabled()) {
-                log.info("Uploaded hashed pan list");
+                log.info(nextFile == null ? "Uploaded hashed pan list" : "Uploaded partial hashed pan list");
             }
 
         } catch (AzureBlobUploadException e) {

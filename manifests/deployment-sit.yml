@@ -26,6 +26,8 @@ spec:
                 name: eventhub-logging
             - configMapRef:
                 name: jvm
+            - configMapRef:
+                name: rtdpaymentinstrumentmanager
           livenessProbe:
             httpGet:
               path: /actuator/health
