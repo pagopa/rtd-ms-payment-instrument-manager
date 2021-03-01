@@ -125,8 +125,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
-        disableBpdHpans(String.valueOf(executionDates.get("bpd_exec_date")),endDate);
-        disableFaHpans(String.valueOf(executionDates.get("fa_exec_date")));
+        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),endDate);
+        disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
 
         paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDate);
 
@@ -394,6 +394,22 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                     executed = true;
                 } else {
                     offset += deletePageSize;
+                }
+
+            }
+
+            boolean executedCitizen = false;
+            long offsetCitizen = 0L;
+
+            while (!executedCitizen) {
+                List<String> hashedPans = paymentInstrumentManagerDao.getBpdDisabledCitizenPans(
+                        executionDate, startDate, offsetCitizen, deletePageSize);
+                paymentInstrumentManagerDao.disableBpdPaymentInstruments(hashedPans, deleteBatchSize);
+
+                if (hashedPans.isEmpty() || hashedPans.size() < deletePageSize) {
+                    executedCitizen = true;
+                } else {
+                    offsetCitizen += deletePageSize;
                 }
 
             }

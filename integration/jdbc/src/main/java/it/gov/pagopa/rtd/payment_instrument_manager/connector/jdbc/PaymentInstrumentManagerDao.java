@@ -30,4 +30,6 @@ public interface PaymentInstrumentManagerDao {
 
     List<String> getFaDisabledPans(String executionDate, Long offset, Long size);
 
+    public List<String> getBpdDisabledCitizenPans(String executionDate, String startDate, Long offset, Long size);
+
 }

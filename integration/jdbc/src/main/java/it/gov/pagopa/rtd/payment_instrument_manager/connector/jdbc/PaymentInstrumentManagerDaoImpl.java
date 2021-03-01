@@ -53,10 +53,10 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         String queryTemplate = "SELECT bpi.hpan_s" +
                 " FROM bpd_payment_instrument.bpd_payment_instrument bpi," +
                 " bpd_payment_instrument.bpd_payment_instrument_history bpih " +
-                "WHERE bpih.activation_t >= '" + executionDate + "' " +
+                " WHERE bpih.activation_t >= '" + executionDate + "' " +
                 " AND (bpih.deactivation_t IS NULL OR bpih.deactivation_t >=  '" + startDate + "')" +
                 " AND bpi.hpan_s = bpih.hpan_s " +
-                "ORDER BY bpi.insert_date_t ";
+                " ORDER BY bpi.insert_date_t ";
 
 
         if (offset != null && size != null) {
@@ -91,7 +91,10 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.getExecutionData");
 
-        String queryTemplate = "select bpd_execution_date_t as bpd_exec_date, fa_execution_date_t as fa_exec_date" +
+        String queryTemplate = "select bpd_execution_date_t as bpd_exec_date, " +
+                "bpd_del_execution_date_t as bpd_del_exec_date, " +
+                "fa_del_execution_date_t as fa_del_exec_date, " +
+                "fa_execution_date_t as fa_exec_date" +
                 " from rtd_batch_exec_data limit 1";
 
         return rtdJdbcTemplate.queryForMap(queryTemplate);
@@ -149,7 +152,9 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         log.info("PaymentInstrumentManagerDaoImpl.updateExecutionDate");
 
         String queryTemplate = "UPDATE rtd_batch_exec_data SET bpd_execution_date_t='"
-                + executionDate +"', fa_execution_date_t='"+ executionDate + "'";
+                + executionDate + "', bpd_del_execution_date_t='" + executionDate
+                + "', fa_execution_date_t='" + executionDate +
+                "', fa_del_execution_date_t='"+ executionDate + "'";
 
         rtdJdbcTemplate.update(queryTemplate);
     }
@@ -165,6 +170,27 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 "WHERE bpi.status_c = 'INACTIVE' " +
                 "AND cancellation_t < '" + startDate + "' " +
                 "ORDER BY bpi.insert_date_t";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+
+    }
+
+    @Override
+    public List<String> getBpdDisabledCitizenPans(String executionDate, String startDate, Long offset, Long size) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledPans offset:"
+                + offset + ",size:"+size);
+
+        String queryTemplate = "SELECT bpi.hpan_s FROM dblink('bpd_citizen_remote'," +
+                "'SELECT fiscal_code_s FROM bpd_citizen.bpd_citizen WHERE enabled_b=false AND" +
+                " cancellation_t >= ''" + executionDate + "'' ') AS bpc(fiscal_code_s varchar)," +
+                " bpd_payment_instrument.bpd_payment_instrument bpi" +
+                " WHERE bpi.fiscal_code_s = bpc.fiscal_code_s" +
+                " ORDER BY bpi.insert_date_t";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
