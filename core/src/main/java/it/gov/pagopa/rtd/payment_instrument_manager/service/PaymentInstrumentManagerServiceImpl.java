@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -119,16 +121,17 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         String startDate = String.valueOf(awardPeriodData.get("start_date"));
         String endDate = String.valueOf(awardPeriodData.get("end_date"));
 
-        String saveExecutionDate = OffsetDateTime.now().toString();
+        OffsetDateTime saveExecutionDate = OffsetDateTime.now();
+        String saveExecutionDateString = saveExecutionDate.toString();
 
         Map<String,Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
 
         writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
-        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),endDate);
+        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),endDate, saveExecutionDate);
         disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
 
-        paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDate);
+        paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDateString);
 
     }
 
@@ -376,7 +379,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     }
 
-    private void disableBpdHpans(String executionDate, String startDate) {
+    private void disableBpdHpans(String executionDateString, String startDateString, OffsetDateTime saveExecutionDate) {
 
         try {
 
@@ -386,9 +389,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             while (!executed) {
 
                 List<String> hashedPans = paymentInstrumentManagerDao
-                        .getBpdDisabledPans(executionDate, startDate, offset, deletePageSize);
+                        .getBpdDisabledPans(executionDateString, startDateString, offset, deletePageSize);
 
-                paymentInstrumentManagerDao.disableBpdPaymentInstruments(hashedPans,deleteBatchSize);
+                paymentInstrumentManagerDao.disableBpdPaymentInstruments(hashedPans, deleteBatchSize);
 
                 if (hashedPans.isEmpty() || hashedPans.size() < deletePageSize) {
                     executed = true;
@@ -403,7 +406,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executedCitizen) {
                 List<String> hashedPans = paymentInstrumentManagerDao.getBpdDisabledCitizenPans(
-                        executionDate, startDate, offsetCitizen, deletePageSize);
+                        executionDateString, startDateString, offsetCitizen, deletePageSize);
                 paymentInstrumentManagerDao.disableBpdPaymentInstruments(hashedPans, deleteBatchSize);
 
                 if (hashedPans.isEmpty() || hashedPans.size() < deletePageSize) {

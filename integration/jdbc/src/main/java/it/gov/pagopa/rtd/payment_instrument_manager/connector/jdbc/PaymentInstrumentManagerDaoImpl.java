@@ -169,6 +169,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 "bpd_payment_instrument.bpd_payment_instrument bpi " +
                 "WHERE bpi.status_c = 'INACTIVE' " +
                 "AND cancellation_t < '" + startDate + "' " +
+                "AND '" + executionDate + "' <= '"+startDate+"'"+
                 "ORDER BY bpi.insert_date_t";
 
         if (offset != null && size != null) {
