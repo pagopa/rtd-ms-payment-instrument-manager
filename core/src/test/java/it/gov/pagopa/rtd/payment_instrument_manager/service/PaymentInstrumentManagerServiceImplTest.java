@@ -26,9 +26,13 @@ import static org.mockito.Mockito.*;
 @ContextConfiguration(classes = PaymentInstrumentManagerServiceImpl.class)
 @TestPropertySource(
         properties = {
-                "batchConfiguration.paymentInstrumentsExtraction.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.extraction.pageSize=100",
                 "blobStorageConfiguration.blobReferenceNoExtension=test",
                 "blobStorageConfiguration.containerReference=demo",
+                "batchConfiguration.paymentInstrumentsExtraction.insert.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.insert.batchSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.delete.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.delete.batchSize=100",
                 "batchConfiguration.paymentInstrumentsExtraction.numberPerFile=100",
                 "batchConfiguration.paymentInstrumentsExtraction.createGeneralFile=true",
                 "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false"

@@ -38,7 +38,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         String queryTemplate = "SELECT min(aw_period_start_d) as start_date, max(aw_period_end_d) as end_date " +
                 "FROM bpd_award_period WHERE aw_period_start_d <= current_date AND " +
-                "aw_period_end_d >= current_date";
+                "aw_period_end_d + aw_grace_period_n >= current_date";
 
         return awardJdbcTemplate.queryForMap(queryTemplate);
     }
@@ -53,10 +53,10 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         String queryTemplate = "SELECT bpi.hpan_s" +
                 " FROM bpd_payment_instrument.bpd_payment_instrument bpi," +
                 " bpd_payment_instrument.bpd_payment_instrument_history bpih " +
-                "WHERE bpih. activation_t >= '" + executionDate + "' " +
+                " WHERE bpih.activation_t >= '" + executionDate + "' " +
                 " AND (bpih.deactivation_t IS NULL OR bpih.deactivation_t >=  '" + startDate + "')" +
                 " AND bpi.hpan_s = bpih.hpan_s " +
-                "ORDER BY bpi.insert_date_t ";
+                " ORDER BY bpi.insert_date_t ";
 
 
         if (offset != null && size != null) {
@@ -87,35 +87,57 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public String getRtdExecutionDate() {
+    public Map<String, Object> getRtdExecutionDate() {
 
         log.info("PaymentInstrumentManagerDaoImpl.getExecutionData");
 
-        String queryTemplate = "select execution_date_t from rtd_batch_exec_data limit 1";
+        String queryTemplate = "select bpd_execution_date_t as bpd_exec_date, " +
+                "bpd_del_execution_date_t as bpd_del_exec_date, " +
+                "fa_del_execution_date_t as fa_del_exec_date, " +
+                "fa_execution_date_t as fa_exec_date" +
+                " from rtd_batch_exec_data limit 1";
 
-        return rtdJdbcTemplate.queryForObject(queryTemplate, String.class);
+        return rtdJdbcTemplate.queryForMap(queryTemplate);
 
     }
 
     @Override
-    public void insertPaymentInstruments(List<String> paymentInstruments) {
+    public void insertBpdPaymentInstruments(List<String> paymentInstruments, int batchSize) {
 
         log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
 
-        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s) VALUES (?)" +
-                " ON CONFLICT DO NOTHING";
+        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s, bpd_enabled_b) VALUES (?,true)" +
+                " ON CONFLICT (hpan_s) DO UPDATE SET bpd_enabled_b=true";
 
         rtdJdbcTemplate.batchUpdate(
                 queryTemplate,
                 paymentInstruments,
-                10000,
+                batchSize,
                 (ps, argument) -> ps.setString(1, argument));
 
     }
 
+    @Override
+    public void insertFaPaymentInstruments(List<String> paymentInstruments, int batchSize) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
+
+        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s, fa_enabled_b) VALUES (?,true)" +
+                " ON CONFLICT (hpan_s) DO UPDATE SET fa_enabled_b=true";
+
+        rtdJdbcTemplate.batchUpdate(
+                queryTemplate,
+                paymentInstruments,
+                batchSize,
+                (ps, argument) -> ps.setString(1, argument));
+
+    }
+
+    @Override
     public List<String> getActiveHashPANs(Long offset, Long size) {
 
-        String queryTemplate = "select * from rtd_payment_instrument_data order by hpan_s";
+        String queryTemplate = "select * from rtd_payment_instrument_data order by hpan_s" +
+                " WHERE bpd_enabled_b=true OR fa_enabled_b=true";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
@@ -124,15 +146,108 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         return rtdJdbcTemplate.queryForList(queryTemplate, String.class);
     }
 
+    @Override
     public void updateExecutionDate(String executionDate) {
 
         log.info("PaymentInstrumentManagerDaoImpl.updateExecutionDate");
 
-        String queryTemplate = "UPDATE rtd_batch_exec_data SET execution_date_t='"
-                + executionDate +"'";
+        String queryTemplate = "UPDATE rtd_batch_exec_data SET bpd_execution_date_t='"
+                + executionDate + "', bpd_del_execution_date_t='" + executionDate
+                + "', fa_execution_date_t='" + executionDate +
+                "', fa_del_execution_date_t='"+ executionDate + "'";
 
         rtdJdbcTemplate.update(queryTemplate);
     }
 
+    @Override
+    public List<String> getBpdDisabledPans(String executionDate, String startDate, Long offset, Long size) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledPans offset:"
+                + offset + ",size:"+size);
+
+        String queryTemplate = "SELECT bpi.hpan_s FROM " +
+                "bpd_payment_instrument.bpd_payment_instrument bpi " +
+                "WHERE bpi.status_c = 'INACTIVE' " +
+                "AND cancellation_t < '" + startDate + "' " +
+                "ORDER BY bpi.insert_date_t";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+
+    }
+
+    @Override
+    public List<String> getBpdDisabledCitizenPans(String executionDate, String startDate, Long offset, Long size) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledPans offset:"
+                + offset + ",size:"+size);
+
+        String queryTemplate = "SELECT bpi.hpan_s FROM dblink('bpd_citizen_remote'," +
+                "'SELECT fiscal_code_s FROM bpd_citizen.bpd_citizen WHERE enabled_b=false AND" +
+                " cancellation_t >= ''" + executionDate + "'' ') AS bpc(fiscal_code_s varchar)," +
+                " bpd_payment_instrument.bpd_payment_instrument bpi" +
+                " WHERE bpi.fiscal_code_s = bpc.fiscal_code_s" +
+                " ORDER BY bpi.insert_date_t";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+
+    }
+
+    @Override
+    public List<String> getFaDisabledPans(String executionDate, Long offset, Long size) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.getFaDisabledPans offset:"
+                + offset + ",size:"+size);
+
+        String queryTemplate = "select hpan_s as hpan" +
+                " from fa_payment_instrument where enabled_b=false AND cancellation_t >= '"
+                + executionDate + "'" +
+                "order by insert_date_t";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return faJdbcTemplate.queryForList(queryTemplate, String.class);
+
+    }
+
+
+    @Override
+    public void disableBpdPaymentInstruments(List<String> paymentInstruments, int batchSize) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.deleteBpdPaymentInstruments");
+
+        String queryTemplate = "UPDATE rtd_payment_instrument_data SET bpd_enabled_b=false WHERE hpan_s=?";
+
+        rtdJdbcTemplate.batchUpdate(
+                queryTemplate,
+                paymentInstruments,
+                batchSize,
+                (ps, argument) -> ps.setString(1, argument));
+
+    }
+
+    @Override
+    public void disableFaPaymentInstruments(List<String> paymentInstruments, int batchSize) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.deleteFaPaymentInstruments");
+
+        String queryTemplate = "UPDATE rtd_payment_instrument_data SET fa_enabled_b=false WHERE hpan_s=?";
+
+        rtdJdbcTemplate.batchUpdate(
+                queryTemplate,
+                paymentInstruments,
+                batchSize,
+                (ps, argument) -> ps.setString(1, argument));
+
+    }
 
 }

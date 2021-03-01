@@ -8,16 +8,28 @@ public interface PaymentInstrumentManagerDao {
     Map<String,Object> getAwardPeriods();
 
     List<String> getBPDActiveHashPANs(
-            String startDate, String endDate, String executionDate, Long offset, Long size);
+            String executionDate, String startDate, String endDate, Long offset, Long size);
 
     List<String> getFAActiveHashPANs(String executionDate, Long offset, Long size);
 
-    String getRtdExecutionDate();
+    Map<String, Object> getRtdExecutionDate();
 
-    void insertPaymentInstruments(List<String> paymentInstruments);
+    void insertBpdPaymentInstruments(List<String> paymentInstruments, int batchSize);
+
+    void insertFaPaymentInstruments(List<String> paymentInstruments, int batchSize);
+
+    void disableBpdPaymentInstruments(List<String> paymentInstruments, int batchSize);
+
+    void disableFaPaymentInstruments(List<String> paymentInstruments, int batchSize);
 
     List<String> getActiveHashPANs(Long offset, Long size);
 
     void updateExecutionDate(String executionDate);
+
+    List<String> getBpdDisabledPans(String executionDate, String startDate, Long offset, Long size);
+
+    List<String> getFaDisabledPans(String executionDate, Long offset, Long size);
+
+    public List<String> getBpdDisabledCitizenPans(String executionDate, String startDate, Long offset, Long size);
 
 }
