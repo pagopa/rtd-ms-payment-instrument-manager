@@ -190,12 +190,16 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 Collections.nCopies(fiscalCodes.size(),
                         "?"));
 
-        String queryTemplate = String.format("SELECT bpi.hpan_s" +
+        String queryTemplate = String.format("SELECT bpi.hpan_s as hpan" +
                 " bpd_payment_instrument.bpd_payment_instrument bpi" +
                 " WHERE bpi.fiscal_code_s IN (%s)" +
                 " ORDER BY bpi.insert_date_t", fiscalCodeIds);
 
-        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+        return bpdJdbcTemplate.queryForList(
+                queryTemplate,
+                String.class,
+                fiscalCodes
+        );
 
     }
 
