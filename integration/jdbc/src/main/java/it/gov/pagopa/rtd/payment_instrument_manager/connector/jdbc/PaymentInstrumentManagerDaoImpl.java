@@ -137,8 +137,9 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     @Override
     public List<String> getActiveHashPANs(Long offset, Long size) {
 
-        String queryTemplate = "select * from rtd_payment_instrument_data order by hpan_s" +
-                " WHERE bpd_enabled_b=true OR fa_enabled_b=true";
+        String queryTemplate = "select * from rtd_payment_instrument_data" +
+                " WHERE bpd_enabled_b=true OR fa_enabled_b=true " +
+                " ORDER by hpan_s";
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
