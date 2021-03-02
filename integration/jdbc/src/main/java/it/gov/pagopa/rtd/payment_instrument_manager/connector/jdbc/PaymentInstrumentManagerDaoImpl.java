@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -169,6 +170,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 "bpd_payment_instrument.bpd_payment_instrument bpi " +
                 "WHERE bpi.status_c = 'INACTIVE' " +
                 "AND cancellation_t < '" + startDate + "' " +
+                "AND '" + executionDate + "' <= '"+startDate+"'"+
                 "ORDER BY bpi.insert_date_t";
 
         if (offset != null && size != null) {
@@ -180,17 +182,34 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public List<String> getBpdDisabledCitizenPans(String executionDate, String startDate, Long offset, Long size) {
+    public List<String> getBpdDisabledCitizenPans(List<String> fiscalCodes) {
 
-        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledPans offset:"
+        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledCitizenPans");
+
+        String fiscalCodeIds = String.join(",",
+                Collections.nCopies(fiscalCodes.size(),
+                        "?"));
+
+        String queryTemplate = String.format("SELECT bpi.hpan_s" +
+                " bpd_payment_instrument.bpd_payment_instrument bpi" +
+                " WHERE bpi.fiscal_code_s IN (%s)" +
+                " ORDER BY bpi.insert_date_t", fiscalCodeIds);
+
+        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+
+    }
+
+    @Override
+    public List<String> getBpdDisabledCitizens(String executionDate, String startDate, Long offset, Long size) {
+
+        log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledCitizens offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "SELECT bpi.hpan_s FROM dblink('bpd_citizen_remote'," +
-                "'SELECT fiscal_code_s FROM bpd_citizen.bpd_citizen WHERE enabled_b=false AND" +
-                " cancellation_t >= ''" + executionDate + "'' ') AS bpc(fiscal_code_s varchar)," +
-                " bpd_payment_instrument.bpd_payment_instrument bpi" +
-                " WHERE bpi.fiscal_code_s = bpc.fiscal_code_s" +
-                " ORDER BY bpi.insert_date_t";
+        String queryTemplate = "SELECT bcz.fiscal_code_s FROM bpd_citizen.bpd_citizen bcz" +
+                " WHERE bcz.enabled_b=false AND" +
+                " bcz.cancellation_t >= '" + executionDate + "' " +
+                " ORDER BY bcz.insert_date_t";
+
 
         if (offset != null && size != null) {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
