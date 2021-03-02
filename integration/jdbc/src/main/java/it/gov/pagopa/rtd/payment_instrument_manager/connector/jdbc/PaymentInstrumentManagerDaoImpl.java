@@ -186,7 +186,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.getBpdDisabledCitizenPans");
 
-        String fiscalCodeIds = String.join(",", fiscalCodes);
+        String fiscalCodeIds = String.format("'%s'",String.join("','", fiscalCodes));
 
         String queryTemplate = String.format("SELECT bpi.hpan_s as hpan" +
                 " bpd_payment_instrument.bpd_payment_instrument bpi" +
