@@ -36,7 +36,8 @@ import static org.mockito.Mockito.*;
                 "batchConfiguration.paymentInstrumentsExtraction.delete.batchSize=100",
                 "batchConfiguration.paymentInstrumentsExtraction.numberPerFile=100",
                 "batchConfiguration.paymentInstrumentsExtraction.createGeneralFile=true",
-                "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false"
+                "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false",
+                "batchConfiguration.paymentInstrumentsExtraction.deleteDisabledHpans=false"
         })
 public class PaymentInstrumentManagerServiceImplTest {
 

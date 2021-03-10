@@ -48,6 +48,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private final Long numberPerFile;
     private final Boolean createPartialFile;
     private final Boolean createGeneralFile;
+    private final Boolean deleteDisabledHpans;
 
     @Autowired
     public PaymentInstrumentManagerServiceImpl(
@@ -62,7 +63,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.numberPerFile}") Long numberPerFile,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.createGeneralFile}") Boolean createGeneralFile,
-            @Value("${batchConfiguration.paymentInstrumentsExtraction.createPartialFile}") Boolean createPartialFile
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.createPartialFile}") Boolean createPartialFile,
+            @Value("${batchConfiguration.paymentInstrumentsExtraction.deleteDisabledHpans}") Boolean deleteDisabledHpans
     ) {
         this.paymentInstrumentManagerDao = paymentInstrumentManagerDao;
         this.azureBlobClient = azureBlobClient;
@@ -77,6 +79,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
         this.createGeneralFile = createGeneralFile;
         this.createPartialFile = createPartialFile;
+        this.deleteDisabledHpans = deleteDisabledHpans;
     }
 
     @Override
@@ -130,6 +133,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
         disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),endDate);
         disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
+        if (deleteDisabledHpans) {
+            deleteDisabledHpans();
+        }
 
         paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDateString);
 
@@ -446,6 +452,19 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
                 }
 
             }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+            throw e;
+        }
+
+    }
+
+    private void deleteDisabledHpans() {
+
+        try {
+
+            paymentInstrumentManagerDao.deletePaymentInstruments();
 
         } catch (Exception e) {
             log.error(e.getMessage(),e);

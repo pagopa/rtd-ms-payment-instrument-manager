@@ -34,4 +34,6 @@ public interface PaymentInstrumentManagerDao {
 
     List<String> getBpdDisabledCitizens(String executionDate, String startDate, Long offset, Long size);
 
+    void deletePaymentInstruments();
+
 }
