@@ -241,7 +241,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     @Override
     public void disableBpdPaymentInstruments(List<String> paymentInstruments, int batchSize) {
 
-        log.info("PaymentInstrumentManagerDaoImpl.deleteBpdPaymentInstruments");
+        log.info("PaymentInstrumentManagerDaoImpl.disableBpdPaymentInstruments");
 
         String queryTemplate = "UPDATE rtd_payment_instrument_data SET bpd_enabled_b=false WHERE hpan_s=?";
 
@@ -256,7 +256,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     @Override
     public void disableFaPaymentInstruments(List<String> paymentInstruments, int batchSize) {
 
-        log.info("PaymentInstrumentManagerDaoImpl.deleteFaPaymentInstruments");
+        log.info("PaymentInstrumentManagerDaoImpl.disableFaPaymentInstruments");
 
         String queryTemplate = "UPDATE rtd_payment_instrument_data SET fa_enabled_b=false WHERE hpan_s=?";
 
@@ -265,6 +265,18 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 paymentInstruments,
                 batchSize,
                 (ps, argument) -> ps.setString(1, argument));
+
+    }
+
+    @Override
+    public void deletePaymentInstruments() {
+
+        log.info("PaymentInstrumentManagerDaoImpl.deletePaymentInstruments");
+
+        String queryTemplate = "DELETE FROM rtd_test.rtd_payment_instrument_data " +
+                "WHERE bpd_enabled_b=false AND fa_enabled_b=false";
+
+        rtdJdbcTemplate.update(queryTemplate);
 
     }
 
