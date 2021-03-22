@@ -16,6 +16,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.PostConstruct;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -26,12 +27,17 @@ import static org.mockito.Mockito.*;
 @ContextConfiguration(classes = PaymentInstrumentManagerServiceImpl.class)
 @TestPropertySource(
         properties = {
-                "batchConfiguration.paymentInstrumentsExtraction.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.extraction.pageSize=100",
                 "blobStorageConfiguration.blobReferenceNoExtension=test",
                 "blobStorageConfiguration.containerReference=demo",
+                "batchConfiguration.paymentInstrumentsExtraction.insert.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.insert.batchSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.delete.pageSize=100",
+                "batchConfiguration.paymentInstrumentsExtraction.delete.batchSize=100",
                 "batchConfiguration.paymentInstrumentsExtraction.numberPerFile=100",
                 "batchConfiguration.paymentInstrumentsExtraction.createGeneralFile=true",
-                "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false"
+                "batchConfiguration.paymentInstrumentsExtraction.createPartialFile=false",
+                "batchConfiguration.paymentInstrumentsExtraction.deleteDisabledHpans=false"
         })
 public class PaymentInstrumentManagerServiceImplTest {
 
@@ -49,6 +55,22 @@ public class PaymentInstrumentManagerServiceImplTest {
         when(paymentInstrumentManagerDaoMock.getBPDActiveHashPANs(
                 Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Collections.singletonList("test"));
+
+        HashMap<String, Object> awardHashMap = new HashMap<>();
+        awardHashMap.put("start_date", "2018-01-01 00:00:00.000+01");
+        awardHashMap.put("end_date", "2021-12-31 23:59:59.999+01");
+
+        when(paymentInstrumentManagerDaoMock.getAwardPeriods())
+                .thenReturn(awardHashMap);
+
+        HashMap<String, Object> rtdHashMap = new HashMap<>();
+        rtdHashMap.put("bpd_exec_date", "2018-01-01 00:00:00.000+01");
+        rtdHashMap.put("fa_exec_date", "2018-01-01 00:00:00.000+01");
+        rtdHashMap.put("bpd_del_exec_date", "2018-01-01 00:00:00.000+01");
+        rtdHashMap.put("fa_del_exec_date", "2018-01-01 00:00:00.000+01");
+
+        when(paymentInstrumentManagerDaoMock.getRtdExecutionDate())
+                .thenReturn(rtdHashMap);
 
         when(paymentInstrumentManagerDaoMock.getActiveHashPANs(
                 Mockito.any(), Mockito.any()))

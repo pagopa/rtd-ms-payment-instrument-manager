@@ -19,7 +19,6 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
         this.paymentInstrumentManagerService = paymentInstrumentManagerService;
     }
 
-
     @Override
     public void getHashedPans(HttpServletResponse httpServletResponse,
                               String filePartId) {
@@ -34,8 +33,6 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
         httpServletResponse.setHeader("Location", downloadLink);
     }
 
-
-    //TODO:remove me
     @Override
     public void uploadActiveHashPANs() {
         paymentInstrumentManagerService.generateFileForAcquirer();
