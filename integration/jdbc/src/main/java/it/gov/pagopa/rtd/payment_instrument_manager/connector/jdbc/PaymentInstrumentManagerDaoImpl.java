@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -107,8 +108,15 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
 
-        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s, bpd_enabled_b) VALUES (?,true)" +
-                " ON CONFLICT (hpan_s) DO UPDATE SET bpd_enabled_b=true";
+        OffsetDateTime offsetDateTime = OffsetDateTime.now();
+
+        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(" +
+                "hpan_s, insert_user_s, insert_date_t, bpd_enabled_b) VALUES" +
+                " (?, 'rtdmspaymentinstrumentmanager', '" + offsetDateTime.toString() + "' ,true)" +
+                " ON CONFLICT (hpan_s)" +
+                " DO UPDATE SET bpd_enabled_b=true," +
+                " update_user_s='rtdmspaymentinstrumentmanager', update_date_t='"
+                + offsetDateTime.toString() + "'";
 
         rtdJdbcTemplate.batchUpdate(
                 queryTemplate,
@@ -123,8 +131,14 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
 
-        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(hpan_s, fa_enabled_b) VALUES (?,true)" +
-                " ON CONFLICT (hpan_s) DO UPDATE SET fa_enabled_b=true";
+        OffsetDateTime offsetDateTime = OffsetDateTime.now();
+
+        String queryTemplate = "INSERT INTO rtd_payment_instrument_data(" +
+                "hpan_s, insert_user_s, insert_date_t, fa_enabled_b)" +
+                " VALUES (?, 'rtdmspaymentinstrumentmanager', '" + offsetDateTime.toString() + "' ,true)" +
+                " ON CONFLICT (hpan_s) DO UPDATE SET fa_enabled_b=true,"  +
+                " update_user_s='rtdmspaymentinstrumentmanager', update_date_t='"
+                + offsetDateTime.toString() + "'";
 
         rtdJdbcTemplate.batchUpdate(
                 queryTemplate,
@@ -243,7 +257,13 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.disableBpdPaymentInstruments");
 
-        String queryTemplate = "UPDATE rtd_payment_instrument_data SET bpd_enabled_b=false WHERE hpan_s=?";
+        OffsetDateTime offsetDateTime = OffsetDateTime.now();
+
+        String queryTemplate = "UPDATE rtd_payment_instrument_data " +
+                "SET bpd_enabled_b=false," +
+                " update_user_s='rtdmspaymentinstrumentmanager', update_date_t='" +
+                 offsetDateTime.toString() + "'" +
+                " WHERE hpan_s=?";
 
         rtdJdbcTemplate.batchUpdate(
                 queryTemplate,
@@ -258,7 +278,13 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         log.info("PaymentInstrumentManagerDaoImpl.disableFaPaymentInstruments");
 
-        String queryTemplate = "UPDATE rtd_payment_instrument_data SET fa_enabled_b=false WHERE hpan_s=?";
+        OffsetDateTime offsetDateTime = OffsetDateTime.now();
+
+        String queryTemplate = "UPDATE rtd_payment_instrument_data" +
+                " SET fa_enabled_b=false," +
+                " update_user_s='rtdmspaymentinstrumentmanager', update_date_t='" +
+                offsetDateTime.toString() + "'" +
+                " WHERE hpan_s=?";
 
         rtdJdbcTemplate.batchUpdate(
                 queryTemplate,
