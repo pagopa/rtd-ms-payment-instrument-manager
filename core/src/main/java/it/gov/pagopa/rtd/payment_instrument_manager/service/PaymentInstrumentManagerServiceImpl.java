@@ -131,7 +131,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
-        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),endDate);
+        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),startDate);
         disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
         if (deleteDisabledHpans) {
             deleteDisabledHpans();
