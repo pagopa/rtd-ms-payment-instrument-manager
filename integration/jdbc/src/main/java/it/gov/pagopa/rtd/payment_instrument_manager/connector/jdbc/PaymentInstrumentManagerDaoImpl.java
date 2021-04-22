@@ -57,8 +57,8 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         String queryTemplate = "SELECT bpi.hpan_s as hpan, bpi.par_s as par" +
                 " FROM bpd_payment_instrument.bpd_payment_instrument bpi," +
                 " bpd_payment_instrument.bpd_payment_instrument_history bpih " +
-                " WHERE (bpih.activation_t >= '" + executionDate + "')" +
-                " OR (bpih.update_date_t >= '" + updateExecutionDate + "' AND bpi.par_s IS NOT NULL)" +
+                " WHERE ((bpih.activation_t >= '" + executionDate + "')" +
+                " OR (bpih.update_date_t >= '" + updateExecutionDate + "' AND bpi.par_s IS NOT NULL))" +
                 " AND (bpih.deactivation_t IS NULL OR bpih.deactivation_t >=  '" + startDate + "')" +
                 " AND bpi.hpan_s = bpih.hpan_s " +
                 " ORDER BY bpi.insert_date_t ";
