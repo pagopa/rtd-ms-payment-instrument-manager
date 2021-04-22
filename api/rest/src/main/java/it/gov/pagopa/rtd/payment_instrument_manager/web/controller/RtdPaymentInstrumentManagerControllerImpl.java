@@ -33,6 +33,21 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
         httpServletResponse.setHeader("Location", downloadLink);
     }
 
+
+    @Override
+    public void getParList(HttpServletResponse httpServletResponse,
+                              String filePartId) {
+        if (log.isDebugEnabled()) {
+            log.debug("RtdPaymentInstrumentManagerControllerImpl.getParList");
+        }
+        final String downloadLink = paymentInstrumentManagerService.getParDownloadLink(filePartId);
+        if (log.isDebugEnabled()) {
+            log.debug("downloadLink = " + downloadLink);
+        }
+        httpServletResponse.setStatus(HttpServletResponse.SC_FOUND);
+        httpServletResponse.setHeader("Location", downloadLink);
+    }
+
     @Override
     public void uploadActiveHashPANs() {
         paymentInstrumentManagerService.generateFileForAcquirer();
