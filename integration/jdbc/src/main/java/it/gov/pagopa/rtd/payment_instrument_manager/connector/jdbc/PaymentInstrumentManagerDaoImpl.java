@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,16 +47,18 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public List<String> getBPDActiveHashPANs(
-            String executionDate, String startDate, String endDate, Long offset, Long size) {
+    public List<Map<String,Object>> getBPDActiveHashPANs(
+            String executionDate, String updateExecutionDate,
+            String startDate, String endDate, Long offset, Long size) {
 
         log.info("PaymentInstrumentManagerDaoImpl.getBPDActiveHashPANs offset:"
                 + offset + ",size:"+size);
 
-        String queryTemplate = "SELECT bpi.hpan_s" +
+        String queryTemplate = "SELECT bpi.hpan_s as hpan, bpi.par_s as par" +
                 " FROM bpd_payment_instrument.bpd_payment_instrument bpi," +
                 " bpd_payment_instrument.bpd_payment_instrument_history bpih " +
-                " WHERE bpih.activation_t >= '" + executionDate + "' " +
+                " WHERE (bpih.activation_t >= '" + executionDate + "')" +
+                " OR (bpih.update_date_t >= '" + updateExecutionDate + "' AND bpi.par_s IS NOT NULL)" +
                 " AND (bpih.deactivation_t IS NULL OR bpih.deactivation_t >=  '" + startDate + "')" +
                 " AND bpi.hpan_s = bpih.hpan_s " +
                 " ORDER BY bpi.insert_date_t ";
@@ -65,7 +68,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
             queryTemplate = queryTemplate.concat(" OFFSET " + offset + " LIMIT " +size);
         }
 
-        return bpdJdbcTemplate.queryForList(queryTemplate, String.class);
+        return bpdJdbcTemplate.queryForList(queryTemplate);
 
     }
 
@@ -94,6 +97,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
         log.info("PaymentInstrumentManagerDaoImpl.getExecutionData");
 
         String queryTemplate = "select bpd_execution_date_t as bpd_exec_date, " +
+                "bpd_updt_execution_date_t as bpd_updt_exec_date, " +
                 "bpd_del_execution_date_t as bpd_del_exec_date, " +
                 "fa_del_execution_date_t as fa_del_exec_date, " +
                 "fa_execution_date_t as fa_exec_date" +
@@ -104,17 +108,17 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public void insertBpdPaymentInstruments(List<String> paymentInstruments, int batchSize) {
+    public void insertBpdPaymentInstruments(List<Map<String,Object>> paymentInstruments, int batchSize) {
 
         log.info("PaymentInstrumentManagerDaoImpl.insertPaymentInstruments");
 
         OffsetDateTime offsetDateTime = OffsetDateTime.now();
 
         String queryTemplate = "INSERT INTO rtd_payment_instrument_data(" +
-                "hpan_s, insert_user_s, insert_date_t, bpd_enabled_b) VALUES" +
-                " (?, 'rtdmspaymentinstrumentmanager', '" + offsetDateTime.toString() + "' ,true)" +
+                "hpan_s, par_s, insert_user_s, insert_date_t, bpd_enabled_b) VALUES" +
+                " (?, ?, 'rtdmspaymentinstrumentmanager', '" + offsetDateTime.toString() + "' ,true)" +
                 " ON CONFLICT (hpan_s)" +
-                " DO UPDATE SET bpd_enabled_b=true," +
+                " DO UPDATE SET par_s=?, bpd_enabled_b=true," +
                 " update_user_s='rtdmspaymentinstrumentmanager', update_date_t='"
                 + offsetDateTime.toString() + "'";
 
@@ -122,7 +126,13 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
                 queryTemplate,
                 paymentInstruments,
                 batchSize,
-                (ps, argument) -> ps.setString(1, argument));
+                (ps, argument) -> {
+                    ps.setString(1, String.valueOf(argument.get("hpan")));
+                    Object par = argument.get("par");
+                    String parValue = par == null ? "" : String.valueOf(par);
+                    ps.setString(2, parValue);
+                    ps.setString(3, parValue);
+                });
 
     }
 
@@ -149,9 +159,9 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
-    public List<String> getActiveHashPANs(Long offset, Long size) {
+    public List<Map<String,Object>> getActiveHashPANs(Long offset, Long size) {
 
-        String queryTemplate = "select hpan_s from rtd_payment_instrument_data" +
+        String queryTemplate = "select hpan_s as hpan, par_s as par from rtd_payment_instrument_data" +
                 " WHERE bpd_enabled_b=true OR fa_enabled_b=true " +
                 " ORDER by hpan_s";
 
@@ -159,7 +169,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
             queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
         }
 
-        return rtdJdbcTemplate.queryForList(queryTemplate, String.class);
+        return rtdJdbcTemplate.queryForList(queryTemplate);
     }
 
     @Override
@@ -169,6 +179,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
 
         String queryTemplate = "UPDATE rtd_batch_exec_data SET bpd_execution_date_t='"
                 + executionDate + "', bpd_del_execution_date_t='" + executionDate
+                + "', bpd_updt_execution_date_t='" + executionDate
                 + "', fa_execution_date_t='" + executionDate +
                 "', fa_del_execution_date_t='"+ executionDate + "'";
 

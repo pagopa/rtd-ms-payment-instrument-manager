@@ -37,6 +37,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     private final String containerReference;
     private final String blobReference;
+    private final String blobParReference;
     private final String exstractionFileName;
     private final PaymentInstrumentManagerDao paymentInstrumentManagerDao;
     private final AzureBlobClient azureBlobClient;
@@ -61,6 +62,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             @Value("${batchConfiguration.paymentInstrumentsExtraction.delete.batchSize}") int deleteBatchSize,
             @Value("${blobStorageConfiguration.containerReference}") String containerReference,
             @Value("${blobStorageConfiguration.blobReferenceNoExtension}") String blobReferenceNoExtension,
+            @Value("${blobStorageConfiguration.blobReferenceParNoExtension}") String blobReferenceParNoExtension,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.numberPerFile}") Long numberPerFile,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.createGeneralFile}") Boolean createGeneralFile,
             @Value("${batchConfiguration.paymentInstrumentsExtraction.createPartialFile}") Boolean createPartialFile,
@@ -76,6 +78,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         this.deleteBatchSize = deleteBatchSize;
         this.numberPerFile = numberPerFile;
         this.blobReference = blobReferenceNoExtension.concat(".zip");
+        this.blobParReference = blobReferenceParNoExtension.concat(".zip");
         this.exstractionFileName = blobReferenceNoExtension.concat(".csv");
         this.createGeneralFile = createGeneralFile;
         this.createPartialFile = createPartialFile;
@@ -92,6 +95,27 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         try {
             return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
                     blobReference : blobReference.split("\\.")[0]
+                    .concat("_").concat(filePartId).concat( ".zip"));
+
+        } catch (AzureBlobDirectAccessException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to get blob direct link", e);
+            }
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Override
+    public String getParDownloadLink(String filePartId) {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getDownloadLink");
+        }
+
+        try {
+            return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
+                    blobParReference : blobParReference.split("\\.")[0]
                     .concat("_").concat(filePartId).concat( ".zip"));
 
         } catch (AzureBlobDirectAccessException e) {
@@ -129,7 +153,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         Map<String,Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
 
-        writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
+        writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")),
+                String.valueOf(executionDates.get("bpd_updt_exec_date")), startDate, endDate);
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
         disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),startDate);
         disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
@@ -141,14 +166,14 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     }
 
-    private Set<String> getActiveHashPANs(Long offset, Long size) {
+    private List<Map<String,Object>> getActiveHashPANs(Long offset, Long size) {
 
         if (log.isInfoEnabled()) {
             log.info("PaymentInstrumentManagerServiceImpl.getActiveHashPANs" +
                     " offset: " + offset + ", size: " + size);
         }
 
-        return new HashSet<>(paymentInstrumentManagerDao.getActiveHashPANs(offset, size));
+        return paymentInstrumentManagerDao.getActiveHashPANs(offset, size);
     }
 
     @SneakyThrows
@@ -163,6 +188,11 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         BufferedWriter generalBufferedWriter = null;
         Path generalZippedFile = null;
         Path generalLocalFile = null;
+
+        BufferedWriter generalParBufferedWriter = null;
+        Path generalParZippedFile = null;
+        Path generalParLocalFile = null;
+
         if (createGeneralFile) {
             generalZippedFile = Files.createTempFile(blobReference.split("\\.")[0], ".zip");
             generalLocalFile = Files.createTempFile("tempFile".split("\\.")[0], ".csv");
@@ -172,16 +202,32 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             generalBufferedWriter = Files.newBufferedWriter(generalLocalFile,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+
+            generalParZippedFile = Files.createTempFile(blobParReference.split("\\.")[0], ".zip");
+            generalParLocalFile = Files.createTempFile("tempParFile".split("\\.")[0], ".csv");
+
+            FileUtils.forceDelete(generalParLocalFile.toFile());
+            FileUtils.forceDelete(generalParZippedFile.toFile());
+
+            generalParBufferedWriter = Files.newBufferedWriter(generalParLocalFile,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
         }
 
         boolean executed = false;
         boolean lastSectionWritten = false;
         long offset = 0L;
+        long parOffset = 0L;
         long currentId = 1;
+        long parCurrentId = 1;
 
         BufferedWriter tempBufferedWriter = null;
         Path tempFileZippedFile = null;
         Path tempFileLocalFile = null;
+
+        BufferedWriter tempParBufferedWriter = null;
+        Path tempParFileZippedFile = null;
+        Path tempParFileLocalFile = null;
+
         if (createPartialFile) {
             tempFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
                     .concat("_").concat(String.valueOf(currentId)), ".zip");
@@ -194,17 +240,60 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             tempBufferedWriter = Files.newBufferedWriter(
                     tempFileLocalFile, StandardOpenOption.CREATE_NEW,
                     StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+
+            tempParFileZippedFile = Files.createTempFile(blobReference.split("\\.")[0]
+                    .concat("_").concat(String.valueOf(currentId)), ".zip");
+            tempParFileLocalFile = Files.createTempFile("tempParFile".split("\\.")[0]
+                    .concat("_").concat(String.valueOf(currentId)), ".csv");
+
+            FileUtils.forceDelete(tempParFileZippedFile.toFile());
+            FileUtils.forceDelete(tempParFileLocalFile.toFile());
+
+            tempParBufferedWriter = Files.newBufferedWriter(
+                    tempParFileLocalFile, StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE, StandardOpenOption.APPEND);
         }
 
         while (!executed) {
 
-            Set<String> hashedPans = getActiveHashPANs(offset, extractionPageSize);
-             for (String hashPan : hashedPans) {
+            List<Map<String,Object>> hashedPans = getActiveHashPANs(offset, extractionPageSize);
+             for (Map<String,Object> hashPan : hashedPans) {
                  if (createGeneralFile) {
-                     generalBufferedWriter.write(hashPan.concat(System.lineSeparator()));
+                     generalBufferedWriter.write(String.valueOf(hashPan.get("hpan")).concat(System.lineSeparator()));
+
+                     Object par = hashPan.get("par");
+                     if (par != null) {
+                         generalParBufferedWriter.write(String.valueOf(par).concat(System.lineSeparator()));
+                     }
                  }
                 if (createPartialFile) {
-                    tempBufferedWriter.write(hashPan.concat(System.lineSeparator()));
+                    tempBufferedWriter.write(String.valueOf(hashPan.get("hpan")).concat(System.lineSeparator()));
+
+                    Object par = hashPan.get("par");
+                    if (par != null) {
+                        tempParBufferedWriter.write(String.valueOf(par).concat(System.lineSeparator()));
+                        parOffset++;
+                        tempParBufferedWriter.flush();
+
+                        if (parOffset % numberPerFile == 0) {
+                            tempParBufferedWriter.close();
+                            zipAndUpload(tempParFileLocalFile, tempParFileZippedFile,
+                                    currentId, parCurrentId+1);
+                            parCurrentId = parCurrentId + 1;
+
+                            tempParFileZippedFile = Files.createTempFile(blobParReference.split("\\.")[0]
+                                    .concat("_").concat(String.valueOf(currentId)), ".zip");
+                            tempParFileLocalFile = Files.createTempFile("tempParFile".split("\\.")[0]
+                                    .concat("_").concat(String.valueOf(currentId)), ".csv");
+
+                            FileUtils.forceDelete(tempParFileZippedFile.toFile());
+                            FileUtils.forceDelete(tempParFileLocalFile.toFile());
+
+                            tempParBufferedWriter = Files.newBufferedWriter(tempParFileLocalFile,
+                                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE,
+                                    StandardOpenOption.APPEND);
+                        }
+                    }
                 }
             }
 
@@ -216,10 +305,12 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             if (createGeneralFile) {
                 generalBufferedWriter.flush();
+                generalParBufferedWriter.flush();
             }
 
             if (createPartialFile) {
                 tempBufferedWriter.flush();
+                tempParBufferedWriter.flush();
 
                 if (offset % numberPerFile == 0) {
                     tempBufferedWriter.close();
@@ -250,11 +341,17 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         if (createPartialFile && !lastSectionWritten) {
             tempBufferedWriter.close();
             zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, null);
+
+            tempParBufferedWriter.close();
+            zipAndUpload(tempParFileLocalFile, tempParFileZippedFile, parCurrentId, null);
         }
 
         if (createGeneralFile) {
             generalBufferedWriter.close();
             zipAndUpload(generalLocalFile, generalZippedFile, null,null);
+
+            generalParBufferedWriter.close();
+            zipAndUpload(generalParLocalFile, generalParZippedFile, null,null);
         }
 
     }
@@ -326,7 +423,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     }
 
     @SneakyThrows
-    private void writeBpdHpansToRtd(String executionDate, String startDate, String endDate) {
+    private void writeBpdHpansToRtd(String executionDate, String updateExecutionDate, String startDate, String endDate) {
 
         try {
 
@@ -335,8 +432,9 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             while (!executed) {
 
-                List<String> hashedPans = paymentInstrumentManagerDao
-                        .getBPDActiveHashPANs(executionDate, startDate, endDate, offset, insertPageSize);
+                List<Map<String,Object>> hashedPans = paymentInstrumentManagerDao
+                        .getBPDActiveHashPANs(executionDate, updateExecutionDate,
+                                startDate, endDate, offset, insertPageSize);
 
                 paymentInstrumentManagerDao.insertBpdPaymentInstruments(hashedPans,insertBatchSize);
 
