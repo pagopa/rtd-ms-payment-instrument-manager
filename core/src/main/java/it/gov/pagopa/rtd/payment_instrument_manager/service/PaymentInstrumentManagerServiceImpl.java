@@ -277,7 +277,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
                         if (parOffset % numberPerFile == 0) {
                             tempParBufferedWriter.close();
-                            zipAndUpload(tempParFileLocalFile, tempParFileZippedFile,
+                            zipAndUploadPar(tempParFileLocalFile, tempParFileZippedFile,
                                     currentId, parCurrentId+1);
                             parCurrentId = parCurrentId + 1;
 
@@ -343,7 +343,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             zipAndUpload(tempFileLocalFile, tempFileZippedFile, currentId, null);
 
             tempParBufferedWriter.close();
-            zipAndUpload(tempParFileLocalFile, tempParFileZippedFile, parCurrentId, null);
+            zipAndUploadPar(tempParFileLocalFile, tempParFileZippedFile, parCurrentId, null);
         }
 
         if (createGeneralFile) {
@@ -351,7 +351,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             zipAndUpload(generalLocalFile, generalZippedFile, null,null);
 
             generalParBufferedWriter.close();
-            zipAndUpload(generalParLocalFile, generalParZippedFile, null,null);
+            zipAndUploadPar(generalParLocalFile, generalParZippedFile, null,null);
         }
 
     }
@@ -404,6 +404,72 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
             azureBlobClient.upload(containerReference,
                     currentFile == null ? blobReference : blobReference.split("\\.")[0]
+                            .concat("_").concat(String.valueOf(currentFile)).concat( ".zip"),
+                    zippedFile.toFile().getAbsolutePath(),
+                    nextFile != null ? String.valueOf(nextFile) : null);
+            FileUtils.forceDelete(localFile.toFile());
+            FileUtils.forceDelete(zippedFile.toFile());
+
+            if (log.isInfoEnabled()) {
+                log.info(nextFile == null ? "Uploaded hashed pan list" : "Uploaded partial hashed pan list");
+            }
+
+        } catch (AzureBlobUploadException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to upload blob to azure storage", e);
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SneakyThrows
+    private void zipAndUploadPar(Path localFile, Path zippedFile, Long currentFile, Long nextFile) {
+
+        if (log.isInfoEnabled()) {
+            log.info(nextFile == null ? "Compressing hashed pans" : "Compressing partial hashed pans");
+        }
+
+        FileInputStream fileInputStream = null;
+        FileOutputStream fileOutputStream = null;
+        BufferedInputStream bufferedInputStream = null;
+        BufferedOutputStream bos;
+        try {
+            fileInputStream = new FileInputStream(localFile.toFile());
+            bufferedInputStream = new BufferedInputStream(fileInputStream);
+            fileOutputStream = new FileOutputStream(zippedFile.toFile());
+            bos = new BufferedOutputStream(fileOutputStream);
+            ZipOutputStream zip = new ZipOutputStream(bos);
+            ZipEntry zipEntry = new ZipEntry(exstractionFileName);
+            zip.putNextEntry(zipEntry);
+            IOUtils.copy(bufferedInputStream, zip);
+            zip.close();
+        } catch (IOException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to compress hashed pans list", e);
+            }
+            throw new RuntimeException(e);
+        } finally {
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (bufferedInputStream != null) {
+                bufferedInputStream.close();
+            }
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info(nextFile == null ?
+                    "Uploading compressed hashed pans" :
+                    "Uploading partial compressed hashed pans");
+        }
+
+        try {
+
+            azureBlobClient.upload(containerReference,
+                    currentFile == null ? blobParReference : blobParReference.split("\\.")[0]
                             .concat("_").concat(String.valueOf(currentFile)).concat( ".zip"),
                     zippedFile.toFile().getAbsolutePath(),
                     nextFile != null ? String.valueOf(nextFile) : null);
