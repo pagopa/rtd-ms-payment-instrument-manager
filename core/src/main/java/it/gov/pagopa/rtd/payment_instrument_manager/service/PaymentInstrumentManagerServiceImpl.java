@@ -426,7 +426,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     private void zipAndUploadPar(Path localFile, Path zippedFile, Long currentFile, Long nextFile) {
 
         if (log.isInfoEnabled()) {
-            log.info(nextFile == null ? "Compressing hashed pans" : "Compressing partial hashed pans");
+            log.info(nextFile == null ? "Compressing pars" : "Compressing partial pars");
         }
 
         FileInputStream fileInputStream = null;
@@ -445,7 +445,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             zip.close();
         } catch (IOException e) {
             if (log.isErrorEnabled()) {
-                log.error("Failed to compress hashed pans list", e);
+                log.error("Failed to compress par list", e);
             }
             throw new RuntimeException(e);
         } finally {
@@ -462,8 +462,8 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
         if (log.isInfoEnabled()) {
             log.info(nextFile == null ?
-                    "Uploading compressed hashed pans" :
-                    "Uploading partial compressed hashed pans");
+                    "Uploading pars" :
+                    "Uploading partial compressed pars");
         }
 
         try {
@@ -477,7 +477,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             FileUtils.forceDelete(zippedFile.toFile());
 
             if (log.isInfoEnabled()) {
-                log.info(nextFile == null ? "Uploaded hashed pan list" : "Uploaded partial hashed pan list");
+                log.info(nextFile == null ? "Uploaded par list" : "Uploaded partial par list");
             }
 
         } catch (AzureBlobUploadException e) {
