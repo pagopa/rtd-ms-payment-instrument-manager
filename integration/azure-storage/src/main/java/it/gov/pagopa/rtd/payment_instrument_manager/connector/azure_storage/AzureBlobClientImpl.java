@@ -99,7 +99,8 @@ class AzureBlobClientImpl implements AzureBlobClient {
     }
 
     @Override
-    public void upload(String containerReference, String blobReference, String zipFile) throws AzureBlobUploadException {
+    public void upload(String containerReference, String blobReference, String zipFile, String nextFile)
+            throws AzureBlobUploadException {
         if (log.isDebugEnabled()) {
             log.debug("AzureBlobClientImpl.upload");
             log.debug("containerReference = " + containerReference + ", blobReference = " + blobReference + ", zipFile = " + zipFile);
@@ -117,6 +118,9 @@ class AzureBlobClientImpl implements AzureBlobClient {
 
             final CloudBlockBlob blob = blobContainer.getBlockBlobReference(blobReference);
             blob.getMetadata().put("sha256", DigestUtils.sha256Hex(FileUtils.openInputStream(new File(zipFile))));
+            if (nextFile != null) {
+                blob.getMetadata().put("nextFile", nextFile);
+            }
             blob.uploadFromFile(zipFile);
 
             if (log.isDebugEnabled()) {

@@ -35,13 +35,13 @@ class JdbcConfig {
     }
 
     @Bean(name="bpdDataSourceProperties")
-    @ConfigurationProperties("bpd.spring.datasource")
+    @ConfigurationProperties("bpd.payinstr.spring.datasource")
     public DataSourceProperties bpdDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean(name="bpdDataSource")
-    @ConfigurationProperties(prefix = "bpd.spring.datasource.hikari")
+    @ConfigurationProperties(prefix = "bpd.payinstr.spring.datasource.hikari")
     public DataSource bpdDataSource() {
         return bpdDataSourceProperties().initializeDataSourceBuilder().build();
     }
@@ -69,19 +69,36 @@ class JdbcConfig {
     }
 
     @Bean(name="awardPeriodDataSourceProperties")
-    @ConfigurationProperties("award.spring.datasource")
+    @ConfigurationProperties("bpd.award.spring.datasource")
     public DataSourceProperties awardDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean(name="awardPeriodDataSource")
-    @ConfigurationProperties(prefix = "award.spring.datasource.hikari")
+    @ConfigurationProperties(prefix = "bpd.award.spring.datasource.hikari")
     public DataSource awardDataSource() {
         return awardDataSourceProperties().initializeDataSourceBuilder().build();
     }
 
     @Bean("awardPeriodJdbcTemplate")
     public JdbcTemplate awardJdbcTemplate() {
+        return new JdbcTemplate(awardDataSource());
+    }
+
+    @Bean(name="citizenDataSourceProperties")
+    @ConfigurationProperties("bpd.citizen.spring.datasource")
+    public DataSourceProperties citizenDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean(name="citizenDataSource")
+    @ConfigurationProperties(prefix = "bpd.citizen.spring.datasource.hikari")
+    public DataSource citizenDataSource() {
+        return awardDataSourceProperties().initializeDataSourceBuilder().build();
+    }
+
+    @Bean("citizenJdbcTemplate")
+    public JdbcTemplate citizenJdbcTemplate() {
         return new JdbcTemplate(awardDataSource());
     }
 
