@@ -12,6 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 @Api(tags = "Bonus Pagamenti Digitali payment-instrument-manager Controller")
 @RequestMapping("/rtd/payment-instrument-manager")
 public interface RtdPaymentInstrumentManagerController {
+
+    //TODO: Remove mock when unnecessary
+    @GetMapping(value = "/bin-list-mock")
+    @ResponseStatus(HttpStatus.FOUND)
+    void getBinList(HttpServletResponse httpServletResponse,
+                       @RequestParam(value = "filePartId", required = false) String filePartId);
+
+    //TODO: Remove mock when unnecessary
+    @GetMapping(value = "/token-list-mock")
+    @ResponseStatus(HttpStatus.FOUND)
+    void getTokenList(HttpServletResponse httpServletResponse,
+                    @RequestParam(value = "filePartId", required = false) String filePartId);
+
     @GetMapping(value = "/hashed-pans")
     @ResponseStatus(HttpStatus.FOUND)
     void getHashedPans(HttpServletResponse httpServletResponse,

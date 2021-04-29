@@ -5,7 +5,6 @@ import it.gov.pagopa.rtd.payment_instrument_manager.service.PaymentInstrumentMan
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
@@ -17,6 +16,32 @@ class RtdPaymentInstrumentManagerControllerImpl extends StatelessController impl
     @Autowired
     public RtdPaymentInstrumentManagerControllerImpl(PaymentInstrumentManagerService paymentInstrumentManagerService) {
         this.paymentInstrumentManagerService = paymentInstrumentManagerService;
+    }
+
+    @Override
+    public void getBinList(HttpServletResponse httpServletResponse, String filePartId) {
+        if (log.isDebugEnabled()) {
+            log.debug("RtdPaymentInstrumentManagerControllerImpl.binList");
+        }
+        final String downloadLink = paymentInstrumentManagerService.getBinList(filePartId);
+        if (log.isDebugEnabled()) {
+            log.debug("downloadLink = " + downloadLink);
+        }
+        httpServletResponse.setStatus(HttpServletResponse.SC_FOUND);
+        httpServletResponse.setHeader("Location", downloadLink);
+    }
+
+    @Override
+    public void getTokenList(HttpServletResponse httpServletResponse, String filePartId) {
+        if (log.isDebugEnabled()) {
+            log.debug("RtdPaymentInstrumentManagerControllerImpl.tokenList");
+        }
+        final String downloadLink = paymentInstrumentManagerService.getTokenList(filePartId);
+        if (log.isDebugEnabled()) {
+            log.debug("downloadLink = " + downloadLink);
+        }
+        httpServletResponse.setStatus(HttpServletResponse.SC_FOUND);
+        httpServletResponse.setHeader("Location", downloadLink);
     }
 
     @Override
