@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,6 +84,48 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
         this.createGeneralFile = createGeneralFile;
         this.createPartialFile = createPartialFile;
         this.deleteDisabledHpans = deleteDisabledHpans;
+    }
+
+    @Override
+    public String getBinList(String filePartId) {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getBinList");
+        }
+
+        try {
+            return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
+                    "binList" : "binList".split("\\.")[0]
+                    .concat("_").concat(filePartId).concat( ".zip"));
+
+        } catch (AzureBlobDirectAccessException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to get blob direct link", e);
+            }
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Override
+    public String getTokenList(String filePartId) {
+
+        if (log.isInfoEnabled()) {
+            log.info("PaymentInstrumentManagerServiceImpl.getTokenList");
+        }
+
+        try {
+            return azureBlobClient.getDirectAccessLink(containerReference, filePartId == null ?
+                    "tokenList" : "tokenList".split("\\.")[0]
+                    .concat("_").concat(filePartId).concat( ".zip"));
+
+        } catch (AzureBlobDirectAccessException e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to get blob direct link", e);
+            }
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override
