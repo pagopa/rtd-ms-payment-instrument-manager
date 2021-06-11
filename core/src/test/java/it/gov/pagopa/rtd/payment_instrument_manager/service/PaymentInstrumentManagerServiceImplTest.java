@@ -17,6 +17,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -52,9 +53,11 @@ public class PaymentInstrumentManagerServiceImplTest {
 
     @PostConstruct
     public void configureTests() throws AzureBlobDirectAccessException {
+        Map<String,Object> map = new HashMap<>();
+        map.put("test","test");
         when(paymentInstrumentManagerDaoMock.getBPDActiveHashPANs(
-                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(Collections.singletonList("test"));
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Collections.singletonList(map));
 
         HashMap<String, Object> awardHashMap = new HashMap<>();
         awardHashMap.put("start_date", "2018-01-01 00:00:00.000+01");
@@ -74,7 +77,7 @@ public class PaymentInstrumentManagerServiceImplTest {
 
         when(paymentInstrumentManagerDaoMock.getActiveHashPANs(
                 Mockito.any(), Mockito.any()))
-                .thenReturn(Collections.singletonList("test"));
+                .thenReturn(Collections.singletonList(map));
 
     }
 
@@ -113,7 +116,7 @@ public class PaymentInstrumentManagerServiceImplTest {
 
         paymentInstrumentManagerService.generateFileForAcquirer();
 
-        verify(azureBlobClientMock, only()).upload(anyString(), anyString(), any(), any());
+        verify(azureBlobClientMock, times(2)).upload(anyString(), anyString(), any(), any());
     }
 
 
