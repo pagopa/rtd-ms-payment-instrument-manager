@@ -24,6 +24,8 @@ public interface PaymentInstrumentManagerDao {
 
     List<Map<String,Object>> getActiveHashPANs(Long offset, Long size);
 
+    List<Map<String,Object>> getActivePARs(Long offset, Long size);
+
     void updateExecutionDate(String executionDate);
 
     List<String> getBpdDisabledPans(String executionDate, String startDate, Long offset, Long size);

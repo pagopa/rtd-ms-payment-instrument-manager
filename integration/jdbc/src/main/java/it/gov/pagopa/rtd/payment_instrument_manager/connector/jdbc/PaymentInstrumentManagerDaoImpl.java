@@ -173,6 +173,20 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     }
 
     @Override
+    public List<Map<String,Object>> getActivePARs(Long offset, Long size) {
+
+        String queryTemplate = "select distinct par_s as par from rtd_payment_instrument_data" +
+                " WHERE bpd_enabled_b=true OR fa_enabled_b=true AND par_s IS NOT NULL AND par_s != ''" +
+                " ORDER by par_s";
+
+        if (offset != null && size != null) {
+            queryTemplate = queryTemplate.concat(" offset " + offset + " limit " + size);
+        }
+
+        return rtdJdbcTemplate.queryForList(queryTemplate);
+    }
+
+    @Override
     public void updateExecutionDate(String executionDate) {
 
         log.info("PaymentInstrumentManagerDaoImpl.updateExecutionDate");
