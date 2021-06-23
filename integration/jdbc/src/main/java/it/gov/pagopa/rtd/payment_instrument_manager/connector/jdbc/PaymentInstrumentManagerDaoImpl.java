@@ -176,7 +176,7 @@ class PaymentInstrumentManagerDaoImpl implements PaymentInstrumentManagerDao {
     public List<Map<String,Object>> getActivePARs(Long offset, Long size) {
 
         String queryTemplate = "select distinct par_s as par from rtd_payment_instrument_data" +
-                " WHERE bpd_enabled_b=true OR fa_enabled_b=true AND par_s IS NOT NULL AND par_s != ''" +
+                " WHERE (bpd_enabled_b=true OR fa_enabled_b=true) AND par_s IS NOT NULL AND par_s != ''" +
                 " ORDER by par_s";
 
         if (offset != null && size != null) {
