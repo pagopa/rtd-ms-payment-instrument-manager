@@ -343,8 +343,6 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
             log.info("PaymentInstrumentManagerServiceImpl.uploadPars");
         }
 
-        refreshActiveHpans();
-
         BufferedWriter generalParBufferedWriter = null;
         Path generalParZippedFile = null;
         Path generalParLocalFile = null;
@@ -582,8 +580,7 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
     }
 
     @SneakyThrows
-    private void writeBpdHpansToRtd(
-            String executionDate, String updateExecutionDate, String startDate, String endDate) {
+    private void writeBpdHpansToRtd(String executionDate, String updateExecutionDate, String startDate, String endDate) {
 
         try {
 
