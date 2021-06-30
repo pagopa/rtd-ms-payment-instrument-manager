@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
         - name: rtdmspaymentinstrumentmanager
-          image: cstaruatregistry.azurecr.io/rtdmspaymentinstrumentmanager
+          image: cstaruacr.azurecr.io/rtdmspaymentinstrumentmanager
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
@@ -26,6 +27,8 @@ spec:
                 name: postgres-credentials
             - secretRef:
                 name: azure-storage
+            - secretRef:
+                name: application-insights
             - configMapRef:
                 name: eventhub-logging
             - configMapRef:
@@ -62,7 +65,4 @@ spec:
             failureThreshold: 20
 
 
-      hostAliases:
-        - hostnames:
-            - bpd-event-uat.servicebus.windows.net
-          ip: 10.70.67.5
+
