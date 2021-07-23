@@ -10,7 +10,7 @@
 
     <groupId>it.gov.pagopa.rtd.ms</groupId>
     <artifactId>rtd-ms-payment-instrument-manager</artifactId>
-    <version>1.3.0</version>
+    <version>cen-383-rc1</version>
     <packaging>pom</packaging>
     <properties>
         <bpd-commons.version>cen-383-rc2</bpd-commons.version>
@@ -21,22 +21,22 @@
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-integration-jdbc</artifactId>
-                <version>1.3.0</version>
+                <version>cen-383-rc1</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.integration</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-integration-azure-storage</artifactId>
-                <version>1.3.0</version>
+                <version>cen-383-rc1</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-core</artifactId>
-                <version>1.3.0</version>
+                <version>cen-383-rc1</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.rtd.ms.payment_instrument_manager.api</groupId>
                 <artifactId>rtd-ms-payment-instrument-manager-api-rest</artifactId>
-                <version>1.3.0</version>
+                <version>cen-383-rc1</version>
             </dependency>
             <dependency>
                 <groupId>it.gov.pagopa.bpd.commons.api</groupId>
