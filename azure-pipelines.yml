@@ -8,7 +8,7 @@ trigger:
       - master
       - develop
       - release/*
-      - features/*
+      - feature/*
       - hotfix/*
   paths:
     include:
@@ -33,17 +33,17 @@ variables:
   imageRepository: 'rtdmspaymentinstrumentmanager'
 
 
-  isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')))]
-  isSIT: $[eq(variables['Build.SourceBranch'], 'refs/heads/release/st')]
-  isUAT: $[or(eq(variables['Build.SourceBranch'], 'refs/heads/release/uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix'))]
+  isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release')))]
+  isSIT: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/st')]
+  isUAT: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/uat')]
   isPROD: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/st') }}:
+  ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/release/st') }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
     containerRegistry: 'cstarregistry.azurecr.io'
     deployment: deployment-sit
     imagePullSecret: 'cstarregistry-auth'
-  ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/release/uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')) }}:
+  ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/release/uat') }}:
     dockerRegistryServiceConnection: 'cstaruatregistry-connection'
     containerRegistry: 'cstaruatregistry.azurecr.io'
     deployment: deployment-uat
@@ -53,7 +53,7 @@ variables:
     containerRegistry: 'cstarprodregistry.azurecr.io'
     deployment: deployment-prod
     imagePullSecret: 'cstarprodregistry-auth'
-  ${{ if and(not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release')), ne(variables['Build.SourceBranch'], 'refs/heads/master'), not(startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix'))) }}:
+  ${{ if and(not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release')), ne(variables['Build.SourceBranch'], 'refs/heads/master')) }}:
     dockerRegistryServiceConnection: 'cstarregistry-connection'
 
 stages:
@@ -132,8 +132,8 @@ stages:
           - task: Maven@3
             inputs:
               mavenPomFile: 'pom.xml'
-              goals: 'deploy'
-              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=true'
+              goals: 'package'
+              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=false'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '1.8'
               mavenVersionOption: 'Default'
@@ -215,7 +215,7 @@ stages:
             inputs:
               mavenPomFile: 'pom.xml'
               goals: 'package'
-              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=true'
+              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=false'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '1.8'
               mavenVersionOption: 'Default'
@@ -296,7 +296,7 @@ stages:
             inputs:
               mavenPomFile: 'pom.xml'
               goals: 'deploy'
-              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=true'
+              options: '-B -s $(settingsxml.secureFilePath) -DskipTests=false'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '1.8'
               mavenVersionOption: 'Default'
