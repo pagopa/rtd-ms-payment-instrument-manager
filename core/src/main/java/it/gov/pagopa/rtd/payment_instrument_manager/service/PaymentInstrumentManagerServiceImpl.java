@@ -124,24 +124,29 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
       }
 
       Map<String, Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
+      Map<String, Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
+
       Object tmpStartDate = awardPeriodData.get("start_date");
       Object tmpEndDate = awardPeriodData.get("end_date");
 
       // During phaseout the award period can be null.
-      // In this case start and end date are null, hence no update is done
+      // In this case start and end date are null, hence no HPANS update is done.
       if (tmpStartDate!=null && tmpEndDate!=null){
         String startDate = String.valueOf(tmpStartDate);
         String endDate = String.valueOf(tmpEndDate);
 
-        Map<String, Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
+        //Update BPD HPANS
         writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate,
             endDate);
-        writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
         disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")), startDate);
-        disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
-        if (deleteDisabledHpans) {
-            deleteDisabledHpans();
-        }
+      }
+
+      //Update FA HPANS
+      writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
+      disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
+
+      if (deleteDisabledHpans) {
+        deleteDisabledHpans();
       }
 
       paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDateString);
