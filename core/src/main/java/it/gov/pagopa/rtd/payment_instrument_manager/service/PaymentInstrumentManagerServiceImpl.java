@@ -116,28 +116,35 @@ class PaymentInstrumentManagerServiceImpl implements PaymentInstrumentManagerSer
 
     public void refreshActiveHpans() {
 
-        if (log.isInfoEnabled()) {
-            log.info("PaymentInstrumentManagerServiceImpl.refreshActiveHpans");
-        }
+      OffsetDateTime saveExecutionDate = OffsetDateTime.now();
+      String saveExecutionDateString = saveExecutionDate.toString();
 
-        Map<String,Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
-        String startDate = String.valueOf(awardPeriodData.get("start_date"));
-        String endDate = String.valueOf(awardPeriodData.get("end_date"));
+      if (log.isInfoEnabled()) {
+          log.info("PaymentInstrumentManagerServiceImpl.refreshActiveHpans");
+      }
 
-        OffsetDateTime saveExecutionDate = OffsetDateTime.now();
-        String saveExecutionDateString = saveExecutionDate.toString();
+      Map<String, Object> awardPeriodData = paymentInstrumentManagerDao.getAwardPeriods();
+      Object tmpStartDate = awardPeriodData.get("start_date");
+      Object tmpEndDate = awardPeriodData.get("end_date");
 
-        Map<String,Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
+      // During phaseout the award period can be null.
+      // In this case start and end date are null, hence no update is done
+      if (tmpStartDate!=null && tmpEndDate!=null){
+        String startDate = String.valueOf(tmpStartDate);
+        String endDate = String.valueOf(tmpEndDate);
 
-        writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate, endDate);
+        Map<String, Object> executionDates = paymentInstrumentManagerDao.getRtdExecutionDate();
+        writeBpdHpansToRtd(String.valueOf(executionDates.get("bpd_exec_date")), startDate,
+            endDate);
         writeFaHpansToRtd(String.valueOf(executionDates.get("fa_exec_date")));
-        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")),startDate);
+        disableBpdHpans(String.valueOf(executionDates.get("bpd_del_exec_date")), startDate);
         disableFaHpans(String.valueOf(executionDates.get("fa_del_exec_date")));
         if (deleteDisabledHpans) {
             deleteDisabledHpans();
         }
+      }
 
-        paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDateString);
+      paymentInstrumentManagerDao.updateExecutionDate(saveExecutionDateString);
 
     }
 
